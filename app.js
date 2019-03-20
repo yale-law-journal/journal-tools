@@ -9,6 +9,16 @@ var apiRouter = require('./routes/api');
 
 var app = express();
 
+var db = require('./db')
+
+// Connect to Mongo on start
+db.connect('mongodb://localhost:27017/database', function(err) {
+  if (err) {
+    console.log('Unable to connect to Mongo.')
+    process.exit(1)
+  }
+})
+
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');

@@ -1,37 +1,79 @@
 var express = require('express');
 var router = express.Router();
 
-var hummus = require('hummus');
+var { spawn } = require('child_process');
+var fs = require('fs');
 var path = require('path');
 var sanitize = require('sanitize-filename');
+var tmp = require('tmp');
 
-/* GET users listing. */
-router.get('/:source/:volume/:pageRange', function(req, res, next) {
+var db = require('../db');
+
+async function getEndPage(reporter, volume, page) {
+  let clusters = db.get().db('database').collection('clusters');
+  let laterClusters = await clusters.find({
+    citations: {
+      $elemMatch: {
+        reporter: reporter,
+        volume: volume,
+        page: { $gt: page, $lt: page + 300 },
+      }
+    }
+  }).toArray();
+  if (laterClusters.length > 0) {
+    let key = a => {
+      let cite = [].concat(...a.citations.map(cite =>
+        cite.reporter === reporter ? [cite] : []
+      ))[0];
+      return cite.page;
+    }
+    laterClusters.sort((a, b) => key(a) - key(b));
+    console.log(page, key(laterClusters[0]));
+    return key(laterClusters[0]);
+  } else {
+    return 'end';
+  }
+}
+
+async function resolvePages(reporter, volume, pageRangesStr) {
+  let pageRanges = await Promise.all(pageRangesStr.split(',').map(async range => {
+    if (range.includes('-')) {
+      return range.split('-');
+    } else {
+      let startPageInt = parseInt(range);
+      let endPage = await getEndPage(reporter, volume, startPageInt);
+      return [startPageInt.toString(), endPage.toString()];
+    }
+  }));
+  console.log(pageRanges);
+  return pageRanges.map(range => range.join('-')).join(', ')
+}
+
+/* GET pages from a reporter. */
+router.get('/:reporter/:volume/:pageRange', function(req, res, next) {
   let dataDir = path.resolve(__dirname, '..', 'data');
-  let source = sanitize(req.params['source'].replace(/[\. ]/, '').toLowerCase());
-  let volume = sanitize(req.params['volume']);
+  let reporter = sanitize(req.params['reporter'].replace(/[\. ]/, '').toLowerCase());
+  let volume = parseInt(sanitize(req.params['volume']));
   let pageRangesStr = sanitize(req.params['pageRange']);
 
-  let pageRanges = pageRangesStr.split(',').map(range => {
-    if (range.includes('-')) {
-      return range.split('-').map(s => parseInt(s));
-    } else {
-      p = parseInt(range);
-      return [p, p];
-    }
+  resolvePages(reporter, volume, pageRangesStr).then(resolvedPages => {
+    let sourcePdf = path.resolve(dataDir, reporter, volume + '.pdf');
+
+    tmp.tmpName((err, path) => {
+      path += '.pdf';
+      if (err) throw err;
+
+      let cpdf = spawn('cpdf', [sourcePdf, resolvedPages, '-o', path]);
+      cpdf.on('close', () => {
+        console.log('created');
+        res.sendFile(path, {
+          headers: { 'Content-Type': 'application/pdf' },
+        }, err => {
+          fs.unlink(path, err => { if (err) throw err; });
+        });
+      });
+    });
   });
-  console.log(pageRanges);
-
-  let sourcePdf = path.resolve(dataDir, source, volume + '.pdf');
-  console.log(sourcePdf);
-
-  res.writeHead(200, { 'Content-Type': 'application/pdf' });
-
-  let pdfWriter = hummus.createWriter(new hummus.PDFStreamForResponse(res));
-  pdfWriter.appendPDFPagesFromPDF(sourcePdf, [[0, 0]]);
-  pdfWriter.end();
-
-  res.end();
 });
 
 module.exports = router;
