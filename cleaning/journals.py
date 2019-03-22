@@ -1,5 +1,7 @@
+from base64 import b64encode
 from elasticsearch import Elasticsearch
 from elasticsearch_dsl import connections, Document, Integer, Search, Text
+from hashlib import sha1
 import re
 import scrapy
 
@@ -21,8 +23,13 @@ class Article(Document):
     issue = Integer()
     start_page = Integer()
 
+    def save(self, *args, **kwargs):
+        if self.link:
+            self.meta.id = b64encode(sha1(self.link.encode('utf-8')).digest())
+
+        super().save(*args, **kwargs)
+
 Article.init()
-Article.search().query().delete()
 
 class JournalSpider(scrapy.Spider):
     name = 'JournalSpider'
