@@ -28,7 +28,6 @@ async function getEndPage(reporter, volume, page) {
       return cite.page;
     }
     laterClusters.sort((a, b) => key(a) - key(b));
-    console.log(page, key(laterClusters[0]));
     return key(laterClusters[0]);
   } else {
     return 'end';
@@ -45,7 +44,6 @@ async function resolvePages(reporter, volume, pageRangesStr) {
       return [startPageInt.toString(), endPage.toString()];
     }
   }));
-  console.log(pageRanges);
   return pageRanges.map(range => range.join('-')).join(', ')
 }
 
