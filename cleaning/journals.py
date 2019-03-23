@@ -1,6 +1,6 @@
 from base64 import b64encode
 from elasticsearch import Elasticsearch
-from elasticsearch_dsl import connections, Document, Integer, Search, Text
+from elasticsearch_dsl import connections, Document, Index, Integer, Search, Text
 from hashlib import sha1
 import re
 import scrapy
@@ -11,25 +11,28 @@ connections.create_connection(hosts=['localhost'])
 
 class Article(Document):
     class Index:
-        name = 'article'
+        name = 'articles'
 
     title = Text()
     authors = Text()
     link = Text()
+    download_link = Text()
     site_id = Integer()
-    # journal_name = scrapy.Field()
+    journal_name = scrapy.Field()
     journal_link = Text()
     volume = Integer()
     issue = Integer()
-    start_page = Integer()
+    start_page = Text()
 
     def save(self, *args, **kwargs):
         if self.link:
-            self.meta.id = b64encode(sha1(self.link.encode('utf-8')).digest())
+            link = re.sub(r'https?://', '', self.link)
+            self.meta.id = b64encode(sha1(link.encode('utf-8')).digest())
 
         super().save(*args, **kwargs)
 
 Article.init()
+# Article.search().query().delete()
 
 class JournalSpider(scrapy.Spider):
     name = 'JournalSpider'
@@ -39,9 +42,11 @@ class JournalSpider(scrapy.Spider):
         ]
 
     def journal_list(self, response):
-        for href in response.xpath('//a[.="Visit Journal"]/@href'):
-            yield scrapy.Request(response.urljoin(href.get()), self.journal, meta={
-                'journal_link': href.get(),
+        for link in response.xpath('//h4/a'):
+            href = link.attrib['href']
+            yield scrapy.Request(response.urljoin(href), self.journal, meta={
+                'journal_name': link.xpath('./text()').get(),
+                'journal_link': href,
             })
 
     def journal(self, response):
@@ -52,6 +57,7 @@ class JournalSpider(scrapy.Spider):
                 volume = int(match.group('volume'))
                 issue = int(match.group('issue'))
                 yield scrapy.Request(response.urljoin(link), self.issue, meta={
+                    'journal_name': response.meta['journal_name'],
                     'journal_link': response.meta['journal_link'],
                     'volume': volume,
                     'issue': issue,
@@ -61,6 +67,7 @@ class JournalSpider(scrapy.Spider):
         self.logger.info('Issue: %d %d', response.meta['issue'], response.meta['volume'])
         for article in response.xpath('//div[@class="doc"]'):
             item = Article(
+                journal_name=response.meta['journal_name'],
                 journal_link=response.meta['journal_link'],
                 volume=response.meta['volume'],
                 issue=response.meta['issue']
@@ -74,6 +81,7 @@ class JournalSpider(scrapy.Spider):
                 site_id = link.re_first(r'article=([0-9]+)')
                 if site_id is not None:
                     item.site_id = site_id
+                    item.download_link = href
 
             for authors in article.xpath('.//span[@class="auth"]/text()'):
                 item.authors = authors.get()
