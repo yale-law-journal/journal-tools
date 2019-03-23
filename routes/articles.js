@@ -19,7 +19,7 @@ function expandJournal(journal) {
       let ngram = words.slice(i, i + len).join(' ');
       let full = abbreviations[len][ngram];
       if (full !== undefined) {
-        expanded.replace(ngram, full);
+        expanded = expanded.replace(ngram, full);
         words = expanded.split(' ');
       }
     }
@@ -30,26 +30,51 @@ function expandJournal(journal) {
 /* GET a journal article. */
 router.get('/:journal/:volume/:query', async function(req, res, next) {
   let journal = expandJournal(req.params['journal']);
+  console.log(req.params['journal'], '->', journal);
   let volume = parseInt(req.params['volume']);
   let query = req.params['query'];
   let esQuery = {
     index: 'articles',
     body: {
       query: {
-        match: {}
+        bool: {
+          filter: {
+            term: {
+              volume: volume
+            }
+          },
+          must: [{
+            match: {
+              journal_name: {
+                query: journal,
+                operator: 'and',
+                fuzziness: 'AUTO'
+              }
+            }
+          }],
+          should: []
+        }
       }
     }
   };
   if (query.match(/^[0-9]+$/)) {
     // Page number
-    esQuery.body.query.match.start_page = parseInt(query);
+    esQuery.body.query.bool.should.push({
+      term: {
+        start_page: parseInt(query)
+      }
+    });
   } else {
     // Article title
-    esQuery.body.query.match.title = query;
+    esQuery.body.query.bool.should.push({
+      match: {
+        title: query
+      }
+    });
   }
 
   let result = await client.search(esQuery);
-  if (result.hits.hits.length === 0) {
+  if (result.hits.hits.length === 0 || result.hits.max_score < 15) {
     res.sendStatus(404);
   } else {
     let topResult = result.hits.hits[0]._source;
