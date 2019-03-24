@@ -1,0 +1,10 @@
+{
+  "lambda": {
+    "role": "pdfapi-executor",
+    "name": "pdfapi",
+    "region": "us-east-1"
+  },
+  "api": {
+    "id": "wp1bhhyg8f"
+  }
+}

@@ -5,7 +5,17 @@
   "scripts": {
     "start": "node ./bin/www"
   },
+  "files": [
+      "/public",
+      "/db.js",
+      "/app.js",
+      "/lambda.js",
+      "/routes",
+      "/views",
+      "/data/abbreviations.json"
+  ],
   "dependencies": {
+    "aws-serverless-express": "^3.3.5",
     "cookie-parser": "~1.4.3",
     "debug": "~2.6.9",
     "elasticsearch": "^15.4.1",
