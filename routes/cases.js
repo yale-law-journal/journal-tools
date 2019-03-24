@@ -4,6 +4,7 @@ var router = express.Router();
 var { spawn } = require('child_process');
 var fs = require('fs');
 var path = require('path');
+var request = require('request-promise-native');
 var sanitize = require('sanitize-filename');
 var tmp = require('tmp');
 
@@ -28,9 +29,27 @@ async function getEndPage(reporter, volume, page) {
       return cite.page;
     }
     laterClusters.sort((a, b) => key(a) - key(b));
-    return key(laterClusters[0]);
+    let result = key(laterClusters[0]);
+    if (reporter == 'us') {
+      // Guaranteed to have cases start on new pages.
+      result--;
+    }
+    return result;
   } else {
-    return 'end';
+    // Use case.law to find.
+    console.log('Checking case.law...');
+    try {
+      let tick = Date.now();
+      let caselawResult = await request({
+        uri: `https://api.case.law/v1/cases/?cite=${volume} ${reporter} ${page}`,
+        json: true,
+      });
+      console.log('Case.law request took', Date.now() - tick, 'ms');
+      return caselawResult.results[0].last_page;
+    } catch (err) {
+      console.log(err);
+      return 'end';
+    }
   }
 }
 
@@ -56,19 +75,30 @@ router.get('/:reporter/:volume/:pageRange', function(req, res, next) {
 
   resolvePages(reporter, volume, pageRangesStr).then(resolvedPages => {
     let sourcePdf = path.resolve(dataDir, reporter, volume + '.pdf');
+    if (!fs.existsSync(sourcePdf)) {
+      res.status(404).send('No volume of that reporter.');
+      return;
+    }
 
     tmp.tmpName((err, path) => {
       path += '.pdf';
-      if (err) throw err;
+      if (err) {
+        console.log(err);
+        res.status(500).send('Couldn\'t create temp file.');
+        return;
+      }
 
+      let tick = Date.now();
       let cpdf = spawn('cpdf', [sourcePdf, resolvedPages, '-o', path]);
       cpdf.on('close', () => {
-        console.log('created');
+        console.log('Cpdf took', Date.now() - tick, 'ms');
+        if (!fs.existsSync(sourcePdf)) {
+          res.status(500).send('Couldn\'t create PDF file for delivery.');
+          return;
+        }
         res.sendFile(path, {
           headers: { 'Content-Type': 'application/pdf' },
-        }, err => {
-          fs.unlink(path, err => { if (err) throw err; });
-        });
+        }, err => { next(err); });
       });
     });
   });

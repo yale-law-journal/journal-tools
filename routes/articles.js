@@ -11,7 +11,7 @@ var abbreviationsText = fs.readFileSync(path.resolve(__dirname, '..', 'data', 'a
 var abbreviations = JSON.parse(abbreviationsText);
 
 function expandJournal(journal) {
-  let expanded = journal.replace(/\.(?=[A-Z])/, '. ');
+  let expanded = journal.replace(/\.(?=[A-Z])/g, '. ');
   let ngrams = [];
   let words = expanded.split(' ');
   for (let len = 5; len >= 1; len--) {
@@ -30,7 +30,6 @@ function expandJournal(journal) {
 /* GET a journal article. */
 router.get('/:journal/:volume/:query', async function(req, res, next) {
   let journal = expandJournal(req.params['journal']);
-  console.log(req.params['journal'], '->', journal);
   let volume = parseInt(req.params['volume']);
   let query = req.params['query'];
   let esQuery = {
@@ -48,7 +47,7 @@ router.get('/:journal/:volume/:query', async function(req, res, next) {
               journal_name: {
                 query: journal,
                 operator: 'and',
-                fuzziness: 'AUTO'
+                fuzziness: 3
               }
             }
           }],

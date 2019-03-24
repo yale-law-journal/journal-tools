@@ -37,5 +37,5 @@ with open(sys.argv[1]) as tsv:
         if abbrev.endswith('.') and not abbrev.endswith('s.'):
             abbreviations[num_words][abbrev[:-1] + 's.'] = expanded + 's'
 
-with open('abbreviations.json', 'w') as out:
+with open('data/abbreviations.json', 'w') as out:
     json.dump(abbreviations, out)

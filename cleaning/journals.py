@@ -1,11 +1,11 @@
 from base64 import b64encode
-from elasticsearch import Elasticsearch
-from elasticsearch_dsl import connections, Document, Index, Integer, Search, Text
+from elasticsearch_dsl import connections, Document, Integer, Text
 from hashlib import sha1
 import re
 import scrapy
 
-ISSUE_RE = re.compile(r'vol(?P<volume>[0-9]+)/iss(?P<issue>[0-9]+)$')
+ISSUE_RE = re.compile(r'vol(?P<volume>[0-9]+)/iss(?P<issue>[0-9]+)/?$')
+VOLUME_RE = re.compile(r'vol(?P<volume>[0-9]+)$')
 
 connections.create_connection(hosts=['localhost'])
 
@@ -52,19 +52,32 @@ class JournalSpider(scrapy.Spider):
     def journal(self, response):
         for option in response.xpath('//form[@id="browse"]//option'):
             link = option.attrib['value']
-            match = ISSUE_RE.search(link)
-            if match:
-                volume = int(match.group('volume'))
-                issue = int(match.group('issue'))
-                yield scrapy.Request(response.urljoin(link), self.issue, meta={
-                    'journal_name': response.meta['journal_name'],
-                    'journal_link': response.meta['journal_link'],
+            issue_match = ISSUE_RE.search(link)
+            if issue_match:
+                volume = int(issue_match.group('volume'))
+                issue = int(issue_match.group('issue'))
+                yield scrapy.Request(response.urljoin(link), self.issue, meta=dict(response.meta, **{
                     'volume': volume,
                     'issue': issue,
-                })
+                }))
+            else:
+                volume_match = VOLUME_RE.search(link)
+                if volume_match:
+                    volume = int(volume_match.group('volume'))
+                    yield scrapy.Request(response.urljoin(link), self.volume, meta=dict(response.meta, **{
+                        'volume': volume,
+                    }))
+
+    def volume(self, response):
+        for href in response.xpath('//div[@id="toc"]//a/@href'):
+            match = ISSUE_RE.search(href.get())
+            if match:
+                issue = int(match.group('issue'))
+                yield scrapy.Request(response.urljoin(href.get()), self.issue, meta=dict(response.meta, **{
+                    'issue': issue,
+                }))
 
     def issue(self, response):
-        self.logger.info('Issue: %d %d', response.meta['issue'], response.meta['volume'])
         for article in response.xpath('//div[@class="doc"]'):
             item = Article(
                 journal_name=response.meta['journal_name'],
