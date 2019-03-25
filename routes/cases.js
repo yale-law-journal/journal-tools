@@ -11,32 +11,46 @@ var tmp = require('tmp');
 var db = require('../db');
 
 async function getEndPage(reporter, volume, page) {
-  let clusters = db.get().db('database').collection('clusters');
-  let laterClusters = await clusters.find({
-    citations: {
-      $elemMatch: {
-        reporter: reporter,
-        volume: volume,
-        page: { $gt: page, $lt: page + 300 },
-      }
+  let result = await db.get().search({
+    index: 'cases',
+    body: {
+      query: {
+        nested: {
+          path: 'citations',
+          score_mode: 'avg',
+          query: {
+            bool: {
+              must: [
+                { term: { 'citations.reporter': reporter } },
+                { term: { 'citations.volume': volume } },
+                { range: { 'citations.page': { 'gt': page, 'lte': page + 300 } } }
+              ]
+            }
+          }
+        }
+      },
+      sort: [{
+        'citations.page': {
+          mode: 'avg',
+          order: 'asc',
+          nested: {
+            path: 'citations',
+            filter: { term: { 'citations.reporter': reporter } }
+          }
+        }
+      }]
     }
-  }).toArray();
+  });
+  laterClusters = result.hits.hits;
   if (laterClusters.length > 0) {
-    let key = a => {
-      let cite = [].concat(...a.citations.map(cite =>
-        cite.reporter === reporter ? [cite] : []
-      ))[0];
-      return cite.page;
-    }
-    laterClusters.sort((a, b) => key(a) - key(b));
-    let result = key(laterClusters[0]);
+    let result = laterClusters[0].sort[0];
     if (reporter == 'us') {
       // Guaranteed to have cases start on new pages.
       result--;
     }
     return result;
   } else {
-    // Use case.law to find.
+    // At end of reporter. Use case.law to find.
     console.log('Checking case.law...');
     try {
       let tick = Date.now();

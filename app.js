@@ -1,5 +1,6 @@
 var createError = require('http-errors');
 var express = require('express');
+var fs = require('fs');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
@@ -10,12 +11,14 @@ var articlesRouter = require('./routes/articles');
 
 var app = express();
 
-var db = require('./db')
+var db = require('./db');
 
-// Connect to Mongo on start
-db.connect('mongodb://localhost:27017/database', function(err) {
+var config = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'config.json')))[process.env.NODE_ENV];
+
+// Connect to ES on start
+db.connect(config.elasticsearch, function(err) {
   if (err) {
-    console.log('Unable to connect to Mongo.')
+    console.log('Unable to connect to database.')
     process.exit(1)
   }
 })

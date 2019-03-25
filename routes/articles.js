@@ -1,11 +1,10 @@
 var express = require('express');
 var router = express.Router();
 
-var { Client } = require('elasticsearch');
 var fs = require('fs');
 var path = require('path');
 
-var client = new Client({ node: 'http://localhost:9200' });
+var db = require('../db');
 
 var abbreviationsText = fs.readFileSync(path.resolve(__dirname, '..', 'data', 'abbreviations.json'));
 var abbreviations = JSON.parse(abbreviationsText);
@@ -72,7 +71,7 @@ router.get('/:journal/:volume/:query', async function(req, res, next) {
     });
   }
 
-  let result = await client.search(esQuery);
+  let result = await db.get().search(esQuery);
   if (result.hits.hits.length === 0 || result.hits.max_score < 15) {
     res.sendStatus(404);
   } else {

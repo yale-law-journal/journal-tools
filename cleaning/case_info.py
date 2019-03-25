@@ -26,7 +26,8 @@ collection.drop()
 assert collection.estimated_document_count() == 0
 
 es_client = Elasticsearch()
-es_client.delete_by_query(body={ 'query': { 'match_all': {} } }, index='cases')
+# es_client = Elasticsearch('https://search-ylj-pdfapi-elasticsearch-dev-xycwvspdojzkh2qigsa5x67l6i.us-east-2.es.amazonaws.com')
+# es_client.delete_by_query(body={ 'query': { 'match_all': {} } }, index='cases')
 
 if args.tarfile:
     all_tar_path = args.tarfile
@@ -36,6 +37,18 @@ else:
 
 courts = args.filter.split(',') if args.filter else None
 
+KEEP_KEYS = [
+    'id',
+    'citations',
+    'date_created',
+    'date_modified',
+    'date_filed',
+    'case_name',
+    'case_name_short',
+    'case_name_full',
+    'slug',
+]
+
 def tar_gz_insert_all(tar_gz_obj):
     with gzip.GzipFile(fileobj=tar_gz_obj) as tar_obj:
         with tarfile.TarFile(fileobj=tar_obj) as tar:
@@ -44,13 +57,17 @@ def tar_gz_insert_all(tar_gz_obj):
                 if not tarinfo.isfile() or not tarinfo.name.endswith('.json'): continue
 
                 with tar.extractfile(tarinfo) as json_file:
-                    cluster = json.load(json_file)
+                    cluster_all = json.load(json_file)
+                    cluster = { k: cluster_all[k] for k in KEEP_KEYS if k in cluster_all }
+
                     cluster['normalized_citations'] = []
+                    cluster['normalized_volumes'] = []
                     for cite in cluster['citations']:
                         cite['reporter'] = cite['reporter'].replace('.', '').replace(' ', '').lower()
                         if cite['page'].isdigit():
                             cite['page'] = int(cite['page'])
-                            cluster['normalized_citations'].append('{}.{}.{}'.format(cite['volume'], cite['reporter'], cite['page']))
+                            cluster['normalized_citations'].append('{}_{}_{}'.format(cite['volume'], cite['reporter'], cite['page']))
+                            cluster['normalized_volumes'].append('{}_{}'.format(cite['volume'], cite['reporter']))
                         else:
                             print('Error: Page is not numeric: [{}].'.format(cite['page']))
                     objects.append(cluster)
@@ -61,13 +78,11 @@ def tar_gz_insert_all(tar_gz_obj):
                 es_client,
                 ({
                     '_id': o['id'],
-                    '_index': 'cases',
-                    '_type': 'case',
-                    '_op_type': 'index',
                     '_source': o,
                 } for o in objects),
                 index='cases',
-                doc_type='case',
+                doc_type='_doc',
+                chunk_size=100,
             ))
 
 
