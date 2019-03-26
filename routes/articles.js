@@ -3,11 +3,14 @@ var router = express.Router();
 
 var fs = require('fs');
 var path = require('path');
+var request = require('request-promise-native');
 
 var db = require('../db');
 
 var abbreviationsText = fs.readFileSync(path.resolve(__dirname, '..', 'data', 'abbreviations.json'));
 var abbreviations = JSON.parse(abbreviationsText);
+
+var config = JSON.parse(fs.readFileSync(path.resolve(__dirname, '..', 'config.json')))[process.env.NODE_ENV];
 
 function expandJournal(journal) {
   let expanded = journal.replace(/\.(?=[A-Z])/g, '. ');
@@ -26,11 +29,7 @@ function expandJournal(journal) {
   return expanded;
 }
 
-/* GET a journal article. */
-router.get('/:journal/:volume/:query', async function(req, res, next) {
-  let journal = expandJournal(req.params['journal']);
-  let volume = parseInt(req.params['volume']);
-  let query = req.params['query'];
+async function checkES(journal, volume, title) {
   let esQuery = {
     index: 'articles',
     body: {
@@ -38,7 +37,7 @@ router.get('/:journal/:volume/:query', async function(req, res, next) {
         bool: {
           filter: {
             term: {
-              volume: volume
+              volume: volume,
             }
           },
           must: [{
@@ -46,41 +45,99 @@ router.get('/:journal/:volume/:query', async function(req, res, next) {
               journal_name: {
                 query: journal,
                 operator: 'and',
-                fuzziness: 3
+                fuzziness: 3,
               }
             }
           }],
-          should: []
+          should: [{
+            match: {
+              title: title,
+            }
+          }]
         }
       }
     }
   };
-  if (query.match(/^[0-9]+$/)) {
-    // Page number
-    esQuery.body.query.bool.should.push({
-      term: {
-        start_page: parseInt(query)
-      }
-    });
-  } else {
-    // Article title
-    esQuery.body.query.bool.should.push({
-      match: {
-        title: query
-      }
-    });
-  }
 
   let result = await db.get().search(esQuery);
   if (result.hits.hits.length === 0 || result.hits.max_score < 15) {
-    res.sendStatus(404);
+    return null;
   } else {
     let topResult = result.hits.hits[0]._source;
-    if (!topResult.download_link) {
-      res.sendStatus(404);
-    } else {
-      res.redirect(topResult.download_link);
-    }
+    return topResult.download_link ? topResult.download_link : null;
+  }
+}
+
+async function checkCrossref(journal, volume, title) {
+  // Check Crossref and Unpaywall to try and find a link.
+  // TODO: Move all this data into our own ES?
+
+  let crossref = await request({
+    uri: 'https://api.crossref.org/works',
+    qs: {
+      'query.container-title': journal,
+      'query.title': title,
+      filter: 'type:journal-article',
+      select: 'score,DOI,container-title,volume,page,title,author',
+    },
+    json: true,
+  });
+  if (crossref.status !== 'ok') {
+    console.log('Crossref request failed:', crossref.message);
+    return null;
+  }
+
+  let items = crossref.message.items.filter(i => parseInt(i.volume) === volume);
+  let journalFiltered = items.filter(i => i['container-title'] === journal);
+  if (journalFiltered.length > 0) {
+    items = journalFiltered;
+  }
+  console.log(items[0]);
+  if (items.length == 0) {
+    console.log('Doesn\'t seem to match.');
+    return null;
+  }
+
+  let doi = items[0]['DOI'];
+  let unpaywall = null;
+  try {
+    unpaywall = await request({
+      url: `https://api.unpaywall.org/v2/${doi}`,
+      qs: { email: config.contact_email },
+      json: true,
+    });
+  } catch (e) {
+    console.log(e);
+    return null;
+  }
+
+  let location = unpaywall.best_oa_location;
+  if (!location
+      || !location.url_for_pdf
+      || location.version !== 'submittedVersion') {
+    console.log('Not open access or OA version unsuitable.');
+    return null;
+  }
+
+  return location.url_for_pdf;
+}
+
+async function findLink(journal, volume, title) {
+  return await checkES(journal, volume, title)
+    || await checkCrossref(journal, volume, title);
+}
+
+/* GET a journal article. */
+router.get('/:journal/:volume/:title', async function(req, res) {
+  let journal = expandJournal(req.params['journal']);
+  let volume = parseInt(req.params['volume']);
+  let title = req.params['title'];
+
+  let downloadLink = await findLink(journal, volume, title);
+  if (downloadLink !== null) {
+    res.redirect(downloadLink);
+  } else {
+    res.sendStatus(404);
   }
 });
 
