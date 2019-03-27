@@ -14,7 +14,6 @@ var app = express();
 var db = require('./db');
 
 var config = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'config.json')))[process.env.NODE_ENV];
-app.set('config', config);
 
 // Connect to ES on start
 db.connect(config.elasticsearch, function(err) {
