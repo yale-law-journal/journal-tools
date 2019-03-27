@@ -14,7 +14,7 @@ with open(sys.argv[1]) as tsv:
     for line in tsv:
         if '\t' not in line or line.startswith('#'): continue
         full, abbrev = line.strip().split('\t')
-        match = re.search(r'\[[A-Za-z ]+(, [A-Za-z]+)*\]', full)
+        match = re.search(r'''\[[A-Za-z' ]+(, [A-Za-z']+)*\]''', full)
         if match:
             before = full[:match.start(0)]
             after = full[match.end(0):]

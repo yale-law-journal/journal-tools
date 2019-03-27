@@ -9,6 +9,13 @@ VOLUME_RE = re.compile(r'vol(?P<volume>[0-9]+)$')
 
 connections.create_connection(hosts=['localhost'])
 
+def normalize_title(title):
+    unsub = re.sub(':.*$', '', title)
+    lower = unsub.lower()
+    keywords = re.sub('[^a-z0-9 ]', '', lower)
+    cleaned = re.sub('note|commentary', '', keywords)
+    return cleaned
+
 class Article(Document):
     class Index:
         name = 'articles'
@@ -18,27 +25,31 @@ class Article(Document):
     link = Text()
     download_link = Text()
     site_id = Integer()
-    journal_name = scrapy.Field()
+    journal_name = Text()
     journal_link = Text()
     volume = Integer()
     issue = Integer()
     start_page = Text()
+    key = Text()
 
     def save(self, *args, **kwargs):
-        if self.link:
-            link = re.sub(r'https?://', '', self.link)
-            self.meta.id = b64encode(sha1(link.encode('utf-8')).digest())
+        if self.journal_name and self.volume and self.title:
+            self.key = '{}/{}/{}'.format(self.journal_name, self.volume, normalize_title(self.title))
+            self.meta.id = b64encode(sha1(self.key.encode('utf-8')).digest())
 
         super().save(*args, **kwargs)
 
 Article.init()
-# Article.search().query().delete()
 
 class JournalSpider(scrapy.Spider):
     name = 'JournalSpider'
     def start_requests(self):
         return [
-            scrapy.Request('https://lawreviewcommons.com/peer_review_list.html', self.journal_list)
+            # scrapy.Request('https://lawreviewcommons.com/peer_review_list.html', self.journal_list)
+            scrapy.Request('https://repository.law.umich.edu/mlr/', self.journal, meta={
+                'journal_name': 'Michigan Law Review',
+                'journal_link': 'https://repository.law.umich.edu/mlr/',
+            })
         ]
 
     def journal_list(self, response):

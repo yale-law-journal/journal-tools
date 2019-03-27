@@ -92,11 +92,11 @@ async function checkCrossref(journal, volume, title) {
   if (journalFiltered.length > 0) {
     items = journalFiltered;
   }
-  console.log(items[0]);
   if (items.length == 0) {
     console.log('Doesn\'t seem to match.');
     return null;
   }
+  console.log(items[0]);
 
   let doi = items[0]['DOI'];
   let unpaywall = null;
