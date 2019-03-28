@@ -5,22 +5,27 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
-var indexRouter = require('./routes/index');
-var casesRouter = require('./routes/cases');
-var articlesRouter = require('./routes/articles');
-
 var app = express();
-
-var db = require('./db');
 
 var config = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'config.json')))[process.env.NODE_ENV];
 
 // Connect to ES on start
-db.connect(config.elasticsearch, function(err) {
+var elasticsearch = require('./elasticsearch');
+elasticsearch.connect(config.elasticsearch, function(err) {
   if (err) {
-    console.log('Unable to connect to database.')
+    console.log('Unable to connect to ES.')
     process.exit(1)
   }
+})
+
+var sql = require('./sql');
+var models = require('./models');
+sql.connect(config.postgres, function(err) {
+  if (err || sql.get() === null) {
+    console.log('Unable to connect to SQL.')
+    process.exit(1)
+  }
+  models.sync(sql.get());
 })
 
 // view engine setup
@@ -33,9 +38,15 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+var indexRouter = require('./routes/index');
+var casesRouter = require('./routes/cases');
+var articlesRouter = require('./routes/articles');
+var jobsRouter = require('./routes/jobs');
+
 app.use('/', indexRouter);
 app.use('/api/cases', casesRouter);
 app.use('/api/articles', articlesRouter);
+app.use('/api/jobs', jobsRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

@@ -5,7 +5,7 @@ var fs = require('fs');
 var path = require('path');
 var request = require('request-promise-native');
 
-var db = require('../db');
+var db = require('../elasticsearch');
 
 var abbreviationsText = fs.readFileSync(path.resolve(__dirname, '..', 'data', 'abbreviations.json'));
 var abbreviations = JSON.parse(abbreviationsText);

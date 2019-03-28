@@ -10,6 +10,7 @@ class FileInputCard extends Component {
   constructor(props) {
     super(props);
     this.fileInput = React.createRef();
+    this.form = React.createRef();
     this.state = {
       dropping: false,
       files: null,
@@ -44,10 +45,19 @@ class FileInputCard extends Component {
     }
   };
 
+  submit = async (e) => {
+    e.preventDefault();
+    console.log(e);
+    if (this.form.current) {
+      let fd = new FormData(this.form.current);
+      this.props.createJob(this.form.current.action, fd);
+    }
+  };
+
   render() {
     return (
       <Col md={6} lg={4}>
-        <Card bg={ this.state.dropping ? 'secondary' : 'light' } className="mb-3" onDrop={this.drop} onDragOver={this.dragOver} onDragLeave={this.dragLeave}>
+        <Card bg={ this.state.dropping ? 'secondary' : 'light' } className="mt-3" onDrop={this.drop} onDragOver={this.dragOver} onDragLeave={this.dragLeave}>
           <Card.Body>
             <Row className="justify-content-center">
               <Card.Title>{ this.props.title }</Card.Title>
@@ -55,9 +65,9 @@ class FileInputCard extends Component {
             <Row className="justify-content-center align-items-center" style={{ height: '6rem' }}>
               <Card.Subtitle>Drop file here</Card.Subtitle>
             </Row>
-            <Form inline>
+            <Form method="POST" action={this.props.action} ref={this.form} onSubmit={this.submit} inline>
               <Col className="custom-file align-items-bottom">
-                <Form.Control type="file" ref={this.fileInput} accept=".docx" />
+                <Form.Control type="file" ref={this.fileInput} accept=".docx" name="doc" />
                 <Form.Label className="custom-file-label text-nowrap overflow-hidden" style={{ justifyContent: 'left', cursor: 'pointer' }} onClick={this.fileSelect}>
                   { this.state.files ? this.state.files[0].name : 'File...' }
                 </Form.Label>

@@ -1,5 +1,4 @@
 const path = require('path');
-const NodeExternals = require('webpack-node-externals');
 const NodemonPlugin = require('nodemon-webpack-plugin');
 
 const config = {
@@ -38,7 +37,11 @@ const config = {
     ]
   },
   resolve: { extensions: [ '.jsx', '.js' ] },
-  // externals: [NodeExternals()],
+  externals: {
+    fs: 'true',
+    net: 'true',
+    tls: 'true',
+  },
   devtool: 'source-map',
 };
 

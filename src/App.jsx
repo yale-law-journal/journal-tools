@@ -1,4 +1,6 @@
 import React, { Component } from 'react';
+import request from 'request';
+import rp from 'request-promise';
 
 import Button from 'react-bootstrap/Button';
 import Card from 'react-bootstrap/Card';
@@ -9,9 +11,79 @@ import Navbar from 'react-bootstrap/Navbar';
 import Row from 'react-bootstrap/Row';
 
 import FileInputCard from './components/FileInputCard';
+import JobCard from './components/JobCard';
+
+var decoder = new TextDecoder('utf-8');
 
 class App extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { jobs: {}, progress: {} };
+    this.createJob = this.createJob.bind(this);
+  }
+
+  componentDidMount() {
+    rp({
+      uri: new URL('api/jobs', window.location).toString(),
+      json: true
+    }).then(jobs => {
+      this.setState(prevState => ({
+        ...prevState,
+        jobs: Object.fromEntries(jobs.results.map(j => [j.id, j]))
+      }));
+    });
+  }
+
+  async createJob(action, formData) {
+    let buffer = '';
+    let response = await fetch(new URL(action, window.location).toString(), {
+      method: 'POST',
+      body: formData,
+    })
+    if (!response.status == 200) { return; }
+
+    let job = null;
+    let reader = response.body.getReader();
+    while (true) {
+      let chunk = null;
+      try {
+        chunk = await reader.read();
+      } catch (e) {
+        console.log(e);
+        break;
+      }
+      buffer += decoder.decode(chunk.value);
+
+      let lastNewline = buffer.lastIndexOf('\n');
+      if (lastNewline > -1) {
+        let lines = buffer.slice(0, lastNewline).split('\n');
+        let objects = lines.map(l => JSON.parse(l));
+        if (objects[0].result !== undefined) {
+          job = objects[0].result;
+          this.setState(prevState => ({
+            ...prevState,
+            jobs: Object.assign(prevState.jobs, { [job.id]: job })
+          }));
+        }
+        if (objects[objects.length - 1].progress !== undefined) {
+          let p = objects[objects.length - 1];
+          this.setState(prevState => ({
+            ...prevState,
+            progress: Object.assign(prevState.progress, { [p.id]: p })
+          }));
+        }
+        buffer = buffer.slice(lastNewline + 1);
+      }
+
+      if (chunk.done) { break; }
+    }
+  }
+
   render() {
+    let compare = (a, b) => b.id - a.id;
+    let jobCards = Object.values(this.state.jobs).slice().sort(compare).map(job =>
+      <JobCard {...job} progress={this.state.progress[job.id]} key={job.id} />
+    );
     return <>
       <Navbar bg="dark" variant="dark" className="justify-content-between">
         <Navbar.Brand>Journal Tools</Navbar.Brand>
@@ -20,10 +92,11 @@ class App extends Component {
           <Button type="submit">Login</Button>
         </Form>
       </Navbar>
-      <Container className="pt-5">
-        <Row className="justify-content-center">
-          <FileInputCard title="Perma Links" />
-          <FileInputCard title="Bookpull Spreadsheet" />
+      <Container className="pt-2 justify-content-center">
+        <Row style={{ height: '18rem' }}>
+          <FileInputCard title="Perma Links" action="api/jobs/perma" createJob={this.createJob} />
+          <FileInputCard title="Bookpull Spreadsheet" action="api/jobs/pull" createJob={this.createJob} />
+          { jobCards }
         </Row>
       </Container>
     </>;

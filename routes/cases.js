@@ -5,7 +5,7 @@ var fs = require('fs');
 var path = require('path');
 var sanitize = require('sanitize-filename');
 
-var db = require('../db');
+var db = require('../elasticsearch');
 
 var config = JSON.parse(fs.readFileSync(path.resolve(__dirname, '..', 'config.json')))[process.env.NODE_ENV];
 

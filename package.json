@@ -9,7 +9,8 @@
   },
   "files": [
     "/public",
-    "/db.js",
+    "/elasticsearch.js",
+    "/sql.js",
     "/app.js",
     "/lambda.js",
     "/routes",
@@ -28,14 +29,19 @@
     "http-aws-es": "^6.0.0",
     "http-errors": "~1.6.2",
     "morgan": "~1.9.0",
+    "multer": "^1.4.1",
     "nodemon-webpack-plugin": "^4.0.8",
+    "pg": "^7.9.0",
+    "pg-hstore": "^2.3.2",
     "pug": "2.0.0-beta11",
     "react": "^16.8.5",
     "react-dom": "^16.8.5",
     "react-scripts": "^2.1.8",
     "request": "^2.88.0",
+    "request-promise": "^4.2.4",
     "request-promise-native": "^1.0.7",
-    "sanitize-filename": "^1.6.1"
+    "sanitize-filename": "^1.6.1",
+    "sequelize": "^5.2.1"
   },
   "devDependencies": {
     "@babel/core": "^7.4.0",
