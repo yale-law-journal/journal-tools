@@ -28,14 +28,19 @@ class FileInputCard extends Component {
     this.setState({ dropping: false });
     if (this.fileInput.current) {
       this.fileInput.current.files = e.dataTransfer.files;
-      this.setState({
-        files: e.dataTransfer.files
-      });
     }
   };
 
   dragLeave = (e) => {
     this.setState({ dropping: false });
+  };
+
+  fileChange = () => {
+    if (this.fileInput.current) {
+      this.setState({
+        files: this.fileInput.current.files
+      });
+    }
   };
 
   fileSelect = (e) => {
@@ -67,9 +72,9 @@ class FileInputCard extends Component {
             </Row>
             <Form method="POST" action={this.props.action} ref={this.form} onSubmit={this.submit} inline>
               <Col className="custom-file align-items-bottom">
-                <Form.Control type="file" ref={this.fileInput} accept=".docx" name="doc" />
+                <Form.Control type="file" ref={this.fileInput} accept=".docx" name="doc" onChange={this.fileChange} />
                 <Form.Label className="custom-file-label text-nowrap overflow-hidden" style={{ justifyContent: 'left', cursor: 'pointer' }} onClick={this.fileSelect}>
-                  { this.state.files ? this.state.files[0].name : 'File...' }
+                  { this.state.files ? this.state.files[0].name.replace(/\.docx$/, '') : 'File...' }
                 </Form.Label>
               </Col>
               <Col className="col-auto pr-0">

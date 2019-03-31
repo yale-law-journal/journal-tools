@@ -41,7 +41,8 @@
     "request-promise": "^4.2.4",
     "request-promise-native": "^1.0.7",
     "sanitize-filename": "^1.6.1",
-    "sequelize": "^5.2.1"
+    "sequelize": "^5.2.1",
+    "uuid": "^3.3.2"
   },
   "devDependencies": {
     "@babel/core": "^7.4.0",

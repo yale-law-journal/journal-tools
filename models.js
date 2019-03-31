@@ -12,6 +12,7 @@ function sync(sequelize) {
     endTime: Sequelize.DATE,
     completed: Sequelize.BOOLEAN,
     resultUrl: Sequelize.STRING,
+    s3uuid: Sequelize.STRING,
   }, { sequelize });
 
   sequelize.sync();

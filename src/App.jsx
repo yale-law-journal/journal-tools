@@ -44,8 +44,8 @@ class App extends Component {
 
     let job = null;
     let reader = response.body.getReader();
-    while (true) {
-      let chunk = null;
+    let chunk = null;
+    while (!chunk || !chunk.done) {
       try {
         chunk = await reader.read();
       } catch (e) {
@@ -58,24 +58,46 @@ class App extends Component {
       if (lastNewline > -1) {
         let lines = buffer.slice(0, lastNewline).split('\n');
         let objects = lines.map(l => JSON.parse(l));
-        if (objects[0].result !== undefined) {
-          job = objects[0].result;
-          this.setState(prevState => ({
-            ...prevState,
-            jobs: Object.assign(prevState.jobs, { [job.id]: job })
-          }));
-        }
-        if (objects[objects.length - 1].progress !== undefined) {
-          let p = objects[objects.length - 1];
-          this.setState(prevState => ({
-            ...prevState,
-            progress: Object.assign(prevState.progress, { [p.id]: p })
-          }));
+        for (let i = 0; i < objects.length; i++) {
+          let message = objects[i];
+          console.log(message);
+          if (message.result !== undefined) {
+            job = objects[0].result;
+            this.setState(prevState => ({
+              ...prevState,
+              jobs: Object.assign(prevState.jobs, { [job.id]: job })
+            }));
+          } else if (message.progress !== undefined) {
+            this.setState(prevState => {
+              let prevProgressObj = prevState.progress[message.id] || {};
+              let prevProgress = prevProgressObj.progress || 0;
+              return {
+                ...prevState,
+                progress: Object.assign(prevState.progress, {
+                  [message.id]: {
+                    progress: Math.max(message.progress, prevProgress),
+                    total: message.total,
+                  }
+                })
+              };
+            });
+          } else if (message.completed !== undefined) {
+            this.setState(prevState => ({
+              ...prevState,
+              jobs: Object.assign(prevState.jobs, {
+                [message.id]: Object.assign(prevState.jobs[message.id] || {}, {
+                  resultUrl: message.resultUrl
+                })
+              }),
+              progress: Object.assign(prevState.progress, {
+                [message.id]: { progress: 1, total: 1 }
+              }),
+            }));
+            break;
+          }
         }
         buffer = buffer.slice(lastNewline + 1);
       }
-
-      if (chunk.done) { break; }
     }
   }
 
@@ -93,9 +115,11 @@ class App extends Component {
         </Form>
       </Navbar>
       <Container className="pt-2 justify-content-center">
-        <Row style={{ height: '18rem' }}>
+        <Row className="justify-content-center">
           <FileInputCard title="Perma Links" action="api/jobs/perma" createJob={this.createJob} />
           <FileInputCard title="Bookpull Spreadsheet" action="api/jobs/pull" createJob={this.createJob} />
+        </Row>
+        <Row>
           { jobCards }
         </Row>
       </Container>

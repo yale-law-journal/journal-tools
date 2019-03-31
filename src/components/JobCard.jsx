@@ -3,7 +3,6 @@ import Button from 'react-bootstrap/Button';
 import Card from 'react-bootstrap/Card';
 import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
-import InputGroup from 'react-bootstrap/InputGroup';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import Row from 'react-bootstrap/Row';
 
@@ -24,7 +23,7 @@ class JobCard extends Component {
               <Card.Title>{ JOB_TYPES[this.props.command] } {this.props.fileName}</Card.Title>
             </Row>
             <Row className="justify-content-center mb-3">
-              <Button href={this.props.resultUrl} disabled={!completed}>Result</Button>
+              <Button href={this.props.resultUrl} disabled={!completed} download>Result</Button>
             </Row>
             {progress}
           </Card.Body>
