@@ -19,14 +19,7 @@ elasticsearch.connect(config.elasticsearch, function(err) {
 })
 
 var sql = require('./sql');
-var models = require('./models');
-sql.connect(config.postgres, function(err) {
-  if (err || sql.get() === null) {
-    console.log('Unable to connect to SQL.')
-    process.exit(1)
-  }
-  models.sync(sql.get());
-})
+sql.connect(config.postgres);
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));

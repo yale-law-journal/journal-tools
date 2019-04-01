@@ -13,7 +13,7 @@ var JOB_TYPES = {
 
 class JobCard extends Component {
   render() {
-    let progress = this.props.progress ? <ProgressBar now={this.props.progress.progress / this.props.progress.total * 100} /> : null;
+    let progress = this.props.progress ? (<ProgressBar now={this.props.progress.progress / this.props.progress.total * 100} />) : null;
     let completed = this.props.completed || (this.props.progress && this.props.progress.progress == this.props.progress.total);
     return (
       <Col md={6} lg={4}>
@@ -23,7 +23,9 @@ class JobCard extends Component {
               <Card.Title>{ JOB_TYPES[this.props.command] } {this.props.fileName}</Card.Title>
             </Row>
             <Row className="justify-content-center mb-3">
-              <Button href={this.props.resultUrl} disabled={!completed} download>Result</Button>
+              <Button variant={completed ? 'success' : 'secondary'} href={this.props.resultUrl} disabled={!completed} download>
+                {completed ? 'Download' : 'Working…'}
+              </Button>
             </Row>
             {progress}
           </Card.Body>

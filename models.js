@@ -13,9 +13,11 @@ function sync(sequelize) {
     completed: Sequelize.BOOLEAN,
     resultUrl: Sequelize.STRING,
     s3uuid: Sequelize.STRING,
+    progress: Sequelize.INTEGER,
+    total: Sequelize.INTEGER,
   }, { sequelize });
 
-  sequelize.sync();
+  return sequelize.sync();
 }
 
 module.exports = { sync, Job };

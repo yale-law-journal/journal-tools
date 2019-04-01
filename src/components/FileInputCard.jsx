@@ -28,6 +28,9 @@ class FileInputCard extends Component {
     this.setState({ dropping: false });
     if (this.fileInput.current) {
       this.fileInput.current.files = e.dataTransfer.files;
+      this.setState({
+        files: this.fileInput.current.files
+      });
     }
   };
 

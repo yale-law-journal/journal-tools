@@ -31,6 +31,8 @@ class App extends Component {
         ...prevState,
         jobs: Object.fromEntries(jobs.results.map(j => [j.id, j]))
       }));
+    }, err => {
+      console.log('Failed to fetch job list.');
     });
   }
 
@@ -60,7 +62,7 @@ class App extends Component {
         let objects = lines.map(l => JSON.parse(l));
         for (let i = 0; i < objects.length; i++) {
           let message = objects[i];
-          console.log(message);
+          console.log('Message:', message);
           if (message.result !== undefined) {
             job = objects[0].result;
             this.setState(prevState => ({

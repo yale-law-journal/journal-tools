@@ -1,5 +1,4 @@
 const path = require('path');
-const NodemonPlugin = require('nodemon-webpack-plugin');
 
 const config = {
   context: path.resolve(__dirname, 'src'),
@@ -11,9 +10,6 @@ const config = {
     filename: '[name].bundle.js',
     sourceMapFilename: '[name].js.map'
   },
-  plugins: [
-    // new NodemonPlugin(),
-  ],
   module: {
     rules: [
       {

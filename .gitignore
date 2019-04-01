@@ -1,6 +1,8 @@
+# package directories
 node_modules
-data
-.DS_Store
-__pycache__
+jspm_packages
+
+# Serverless directories
+.serverless
+
 /venv
-/config.json
