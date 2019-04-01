@@ -1,3 +1,6 @@
+.DS_Store
+__pycache__
+
 # package directories
 node_modules
 jspm_packages
@@ -5,4 +8,10 @@ jspm_packages
 # Serverless directories
 .serverless
 
+/config.json
 /venv
+/data/abbreviations.tsv
+/data/us
+/data/orig
+/data/full
+/public/javascripts/index.bundle.js
