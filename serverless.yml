@@ -1,0 +1,92 @@
+service: pdfapi
+
+# You can pin your service to only deploy with a specific Serverless version
+# Check out our docs for more details
+# frameworkVersion: "=X.X.X"
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+  memory: 256
+  websocketApiRouteSelectionExpression: $request.body.action
+
+  environment:
+    NODE_ENV: production
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - es:ESHttpGet
+        - es:ESHttpHead
+        - es:ESHttpPost
+      Resource: arn:aws:es:us-east-1::domain/ylj-pdfapi-es-dev
+    - Effect: Allow
+      Action:
+        - s3:HeadBucket
+      Resource:
+        - "*"
+    - Effect: Allow
+      Action:
+        - s3:ListBucket
+        - s3:GetObject
+        - s3:GetObjectAcl
+        - s3:PutObject
+        - s3:PutObjectAcl
+        - s3:ListBucketMultipartUploads
+        - s3:ListMultipartUploadParts
+        - s3:AbortMultipartUpload
+        - s3:DeleteObject
+      Resource:
+        - arn:aws:s3:::autopull-uploads
+        - arn:aws:s3:::autopull-uploads/*
+  iamManagedPolicies:
+    - arn:aws:iam::aws:policy/AmazonRDSDataFullAccess
+    - arn:aws:iam::aws:policy/AmazonSQSFullAccess
+
+package:
+  exclude:
+    - claudia_deploy.sh
+    - claudia.json
+    - bin/**
+    - cleaning/**
+    - data/**
+    - src/**
+    - venv/**
+  include:
+    - app.js
+    - config.json
+    - elasticsearch.js
+    - lambda.js
+    - models.js
+    - sql.js
+    - data/abbreviations.json
+    - public/**/*.js
+    - public/**/*.css
+    - routes/*.js
+    - views/*.pug
+
+plugins:
+  - serverless-websockets-plugin
+
+functions:
+  apiServer:
+    handler: lambda.handler
+    events:
+      - http: ANY /
+      - http: ANY /api/{proxy+}
+  socketConnect:
+    handler: routes/socket.connect
+    events:
+      - websocket: $connect
+  socketDisconnect:
+    handler: routes/socket.disconnect
+    events:
+      - websocket: $disconnect
+  socketSelectJob:
+    handler: routes/socket.selectJob
+    events:
+      - websocket: selectJob
+  socketDefault:
+    handler: routes/socket.default
+    events:
+      - websocket: $default
