@@ -1,0 +1,33 @@
+service: journal-tools-socket
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+  websocketApiRouteSelectionExpression: $request.body.action
+
+  environment:
+    NODE_ENV: production
+
+  iamManagedPolicies:
+    - arn:aws:iam::aws:policy/AmazonRDSDataFullAccess
+    - arn:aws:iam::aws:policy/AmazonSQSFullAccess
+
+package:
+  exclude:
+    - node_modules/**/aws-sdk/**
+
+plugins:
+  - serverless-websockets-plugin
+
+functions:
+  socket:
+    timeout: 180
+    handler: socket.message
+    events:
+      - websocket: $connect
+      - websocket: $disconnect
+      - websocket: selectJob
+      - websocket: $default
+  fanout:
+    timeout: 180
+    handler: fanout.handler

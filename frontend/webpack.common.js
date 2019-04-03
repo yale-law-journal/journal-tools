@@ -3,7 +3,10 @@ const path = require('path');
 const config = {
   context: path.resolve(__dirname, 'src'),
   entry: {
-    index: ['@babel/polyfill', './index.jsx']
+    index: [
+      // '@babel/polyfill',
+      './index.jsx',
+    ]
   },
   output: {
     path: path.resolve(__dirname, 'public', 'javascripts'),
@@ -37,6 +40,8 @@ const config = {
     fs: 'true',
     net: 'true',
     tls: 'true',
+    react: 'React',
+    'react-dom': 'ReactDOM',
   },
   devtool: 'source-map',
 };

@@ -16,6 +16,7 @@ AWS.config.update({ region: 'us-east-1' });
 
 let s3 = new AWS.S3();
 let sqs = new AWS.SQS();
+let lambda = new AWS.Lambda();
 
 /* GET all jobs. */
 router.get('/', async function(req, res) {
@@ -52,21 +53,27 @@ router.post('/:command', upload.single('doc'), async function(req, res) {
         ReceiveMessageWaitTimeSeconds: '20',
       },
     }).promise();
+    sqs.getQueueAttributes({
+      QueueUrl: queueData.QueueUrl,
+      AttributeNames: [ 'QueueArn' ],
+    }).promise().then(data => {
+      lambda.createEventSourceMapping({
+        EventSourceArn: data.QueueArn,
+        FunctionName: `pdfapi-${req.apiGateway.event.requestContext.stage}-fanout`,
+        BatchSize: 10,
+        Enabled: true,
+      });
+    }).catch(err => { console.log(err); });
   } catch (err) {
     console.log('Couldn\'t create queue:', err);
     res.sendStatus(500);
     return;
   }
 
-  res.writeHead(200, {
-    'Content-Type': 'text/plain',
-    'Transfer-Encoding': 'chunked',
-  });
-
-  res.write(JSON.stringify({ result: job }) + '\n');
-
   let url = queueData.QueueUrl;
-  job.update({ url: url }).then(() => {});
+  await job.update({ queueUrl: url });
+
+  res.json(job);
 
   s3.putObject({
     Body: file.buffer,
@@ -84,65 +91,6 @@ router.post('/:command', upload.single('doc'), async function(req, res) {
       console.log(err);
     }
   });
-
-  let progress = 0;
-  let done = false;
-
-  // Max delay of five minutes.
-  setTimeout(() => { done = true; }, 5 * 60 * 1000);
-
-  while (!done) {
-    let messageData = null;
-    try {
-      messageData = await sqs.receiveMessage({
-        QueueUrl: url,
-        MaxNumberOfMessages: 1,
-        WaitTimeSeconds: 20,
-      }).promise();
-    } catch (err) {
-      console.log('Couldn\t get message from SQS:', err);
-      res.write(JSON.stringify({ id: job.id, error: 'SQS read failed.' }) + '\n');
-      return;
-    }
-
-    let messages = messageData.Messages ? messageData.Messages : [];
-    for (let i = 0; i < messages.length; i++) {
-      let message = JSON.parse(messages[i].Body);
-      console.log('Message:', message);
-      if (message.message === 'progress') {
-        if (message.progress >= progress) {
-          progress = message.progress;
-          res.write(JSON.stringify({
-            id: job.id,
-            progress: progress,
-            total: message.total,
-          }) + '\n');
-          job.update({
-            progress: progress,
-            total: message.total,
-          }, () => {});
-        }
-      } else if (message.message === 'complete') {
-        sqs.deleteQueue({ QueueUrl: url }, () => {});
-        res.write(JSON.stringify({
-          id: job.id,
-          completed: true,
-          resultUrl: message.result_url,
-        }) + '\n');
-        done = true;
-        job.update({
-          id: job.id,
-          completed: true,
-          progress: 1,
-          total: 1,
-          endTime: Date.now(),
-          resultUrl: message.result_url,
-        }).then(() => {});
-      }
-    }
-  }
-
-  res.end();
 });
 
 module.exports = router;

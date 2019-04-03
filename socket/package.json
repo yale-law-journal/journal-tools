@@ -1,0 +1,19 @@
+{
+  "name": "journal-tools-socket",
+  "version": "1.0.0",
+  "description": "Websocket API for Journal Tools",
+  "main": "socket.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Patrick Hulin",
+  "license": "MIT",
+  "optionalDependencies": {
+    "aws-sdk": "^2.434.0"
+  },
+  "dependencies": {
+    "pg": "^7.9.0",
+    "sequelize": "^5.2.9",
+    "serverless-websockets-plugin": "^1.0.0"
+  }
+}

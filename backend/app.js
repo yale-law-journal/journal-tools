@@ -21,15 +21,13 @@ elasticsearch.connect(config.elasticsearch, function(err) {
 var sql = require('./sql');
 sql.connect(config.postgres);
 
-// view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'pug');
-
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+
+var awsServerlessExpressMiddleware = require('aws-serverless-express/middleware');
+app.use(awsServerlessExpressMiddleware.eventContext());
 
 var indexRouter = require('./routes/index');
 var casesRouter = require('./routes/cases');

@@ -1,6 +1,7 @@
 var Sequelize = require('sequelize');
 
 class Job extends Sequelize.Model {}
+class Connection extends Sequelize.Model {}
 
 function sync(sequelize) {
   Job.init({
@@ -12,9 +13,20 @@ function sync(sequelize) {
     endTime: Sequelize.DATE,
     completed: Sequelize.BOOLEAN,
     resultUrl: Sequelize.STRING,
+    queueUrl: Sequelize.STRING,
     s3uuid: Sequelize.STRING,
     progress: Sequelize.INTEGER,
     total: Sequelize.INTEGER,
+  }, { sequelize });
+
+  Connection.init({
+    id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
+    connectionId: Sequelize.STRING,
+    job: {
+      type: Sequelize.INTEGER,
+      references: Job,
+      key: 'id',
+    }
   }, { sequelize });
 
   return sequelize.sync();

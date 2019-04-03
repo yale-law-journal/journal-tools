@@ -8,10 +8,10 @@ jspm_packages
 # Serverless directories
 .serverless
 
-/config.json
+config.json
 /venv
-/data/abbreviations.tsv
-/data/us
-/data/orig
-/data/full
-/public/javascripts/index.bundle.js
+/backend/data/abbreviations.tsv
+/backend/data/us
+/backend/data/orig
+/backend/data/full
+/frontend/public/javascripts/index.bundle.js
