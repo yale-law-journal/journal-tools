@@ -7,7 +7,6 @@ service: journal-tools-backend
 provider:
   name: aws
   runtime: nodejs8.10
-  websocketApiRouteSelectionExpression: $request.body.action
 
   environment:
     NODE_ENV: production
@@ -18,7 +17,7 @@ provider:
         - es:ESHttpGet
         - es:ESHttpHead
         - es:ESHttpPost
-      Resource: arn:aws:es:us-east-1::domain/ylj-pdfapi-es-dev
+      Resource: ${file(config.json):production.elasticsearch.arn}
     - Effect: Allow
       Action:
         - s3:HeadBucket
@@ -43,7 +42,6 @@ provider:
     - arn:aws:iam::aws:policy/AmazonSQSFullAccess
 
 package:
-  individually: true
   exclude:
     - claudia_deploy.sh
     - claudia.json
@@ -51,7 +49,6 @@ package:
     - cleaning/**
     - data/**
     - node_modules/**/aws-sdk/**
-    - public/**
     - src/**
     - venv/**
   include:
@@ -65,16 +62,111 @@ package:
     - routes/*.js
 
 plugins:
-  - serverless-websockets-plugin
-  - serverless-plugin-include-dependencies
+  # - serverless-plugin-include-dependencies
+
+custom:
+  includeDependencies:
+    always:
+      - node_modules/pg/**
+      - node_modules/pg-native/**
 
 functions:
   apiServer:
-    package:
-      include:
-        - public/**/*.js
-        - public/**/*.css
     handler: lambda.handler
+    timeout: 15
     events:
-      - http: ANY /
       - http: ANY /api/{proxy+}
+
+resources:
+  Resources:
+    S3ReadRole:
+      Type: AWS::IAM::Role
+      Properties:
+        RoleName: ApigS3ReadOnly
+        ManagedPolicyArns:
+          - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - apigateway.amazonaws.com
+              Action:
+                - sts:AssumeRole
+    IndexProxyMethod:
+      Type: AWS::ApiGateway::Method
+      Properties:
+        ResourceId:
+          Fn::GetAtt:
+            - ApiGatewayRestApi
+            - RootResourceId
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        HttpMethod: GET
+        AuthorizationType: NONE
+        MethodResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Content-Type: true
+        Integration:
+          Type: AWS
+          Credentials:
+            Fn::GetAtt:
+              - S3ReadRole
+              - Arn
+          Uri: arn:aws:apigateway:${self:provider.region}:s3:path/pdfapi-static/index.html
+          IntegrationHttpMethod: GET
+          IntegrationResponses:
+            - StatusCode: 200
+              ResponseParameters:
+                method.response.header.Content-Type: integration.response.header.Content-Type
+          PassthroughBehavior: WHEN_NO_MATCH
+    ScriptsResource:
+      Type: AWS::ApiGateway::Resource
+      Properties:
+        ParentId:
+          Fn::GetAtt:
+            - ApiGatewayRestApi
+            - RootResourceId
+        PathPart: javascripts
+        RestApiId:
+          Ref: ApiGatewayRestApi
+    ScriptsProxyResource:
+      Type: AWS::ApiGateway::Resource
+      Properties:
+        ParentId:
+          Ref: ScriptsResource
+        PathPart: "{proxy+}"
+        RestApiId:
+          Ref: ApiGatewayRestApi
+    ScriptsProxyMethod:
+      Type: AWS::ApiGateway::Method
+      Properties:
+        ResourceId:
+          Ref: ScriptsProxyResource
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        HttpMethod: GET
+        AuthorizationType: NONE
+        RequestParameters:
+          method.request.path.proxy: true
+        MethodResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Content-Type: true
+        Integration:
+          Type: AWS
+          Credentials:
+            Fn::GetAtt:
+              - S3ReadRole
+              - Arn
+          Uri: arn:aws:apigateway:${self:provider.region}:s3:path/pdfapi-static/javascripts/{key}
+          RequestParameters:
+            integration.request.path.key: method.request.path.proxy
+          IntegrationHttpMethod: GET
+          IntegrationResponses:
+            - StatusCode: 200
+              ResponseParameters:
+                method.response.header.Content-Type: integration.response.header.Content-Type
+          PassthroughBehavior: WHEN_NO_MATCH

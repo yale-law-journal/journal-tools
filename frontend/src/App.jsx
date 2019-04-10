@@ -93,7 +93,7 @@ class App extends Component {
 
     let job = await response.json();
     console.log(job);
-    await trackJob(job);
+    await this.trackJob(job);
   }
 
   render() {

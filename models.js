@@ -22,12 +22,9 @@ function sync(sequelize) {
   Connection.init({
     id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
     connectionId: Sequelize.STRING,
-    job: {
-      type: Sequelize.INTEGER,
-      references: Job,
-      key: 'id',
-    }
   }, { sequelize });
+
+  Job.hasMany(Connection);
 
   return sequelize.sync();
 }

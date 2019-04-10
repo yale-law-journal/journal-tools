@@ -25,16 +25,27 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+app.use(express.static('public'));
 
 var awsServerlessExpressMiddleware = require('aws-serverless-express/middleware');
 app.use(awsServerlessExpressMiddleware.eventContext());
 
-var indexRouter = require('./routes/index');
+app.use(function(req, res, next) {
+  for (let i = 0; i < config.allow_origins.length; i++) {
+    if (req.headers.origin == config.allow_origins[i]) {
+      res.header("Access-Control-Allow-Origin", config.allow_origins[i]);
+      res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    }
+  }
+  next();
+});
+
+// var indexRouter = require('./routes/index');
 var casesRouter = require('./routes/cases');
 var articlesRouter = require('./routes/articles');
 var jobsRouter = require('./routes/jobs');
 
-app.use('/', indexRouter);
+// app.use('/', indexRouter);
 app.use('/api/cases', casesRouter);
 app.use('/api/articles', articlesRouter);
 app.use('/api/jobs', jobsRouter);
