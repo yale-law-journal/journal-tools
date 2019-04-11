@@ -26,7 +26,7 @@ router.get('/:reporter/:volume/:startPage', function(req, res, next) {
       headers: { 'Content-Type': 'application/pdf' },
     }, err => { next(err); });
   } else {
-    res.redirect(`${config.s3}/${reporter}/${volume}/${startPage}.pdf`);
+    res.redirect(`https://s3.amazonaws.com/${config.s3_data}/${reporter}/${volume}/${startPage}.pdf`);
   }
 });
 

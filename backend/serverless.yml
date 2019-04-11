@@ -14,9 +14,7 @@ provider:
   iamRoleStatements:
     - Effect: Allow
       Action:
-        - es:ESHttpGet
-        - es:ESHttpHead
-        - es:ESHttpPost
+        - es:*
       Resource: ${file(config.json):production.elasticsearch.arn}
     - Effect: Allow
       Action:
@@ -35,8 +33,13 @@ provider:
         - s3:AbortMultipartUpload
         - s3:DeleteObject
       Resource:
-        - arn:aws:s3:::autopull-uploads
-        - arn:aws:s3:::autopull-uploads/*
+        - arn:aws:s3:::${file(config.json):production.s3_uploads}
+        - arn:aws:s3:::${file(config.json):production.s3_uploads}/*
+    - Effect: Allow
+      Action:
+        - lambda:CreateEventSourceMapping
+      Resource:
+        - "*"
   iamManagedPolicies:
     - arn:aws:iam::aws:policy/AmazonRDSDataFullAccess
     - arn:aws:iam::aws:policy/AmazonSQSFullAccess
@@ -60,15 +63,6 @@ package:
     - sql.js
     - data/abbreviations.json
     - routes/*.js
-
-plugins:
-  # - serverless-plugin-include-dependencies
-
-custom:
-  includeDependencies:
-    always:
-      - node_modules/pg/**
-      - node_modules/pg-native/**
 
 functions:
   apiServer:
@@ -97,12 +91,8 @@ resources:
     IndexProxyMethod:
       Type: AWS::ApiGateway::Method
       Properties:
-        ResourceId:
-          Fn::GetAtt:
-            - ApiGatewayRestApi
-            - RootResourceId
-        RestApiId:
-          Ref: ApiGatewayRestApi
+        ResourceId: !GetAtt ApiGatewayRestApi.RootResourceId
+        RestApiId: !Ref ApiGatewayRestApi
         HttpMethod: GET
         AuthorizationType: NONE
         MethodResponses:
@@ -111,10 +101,7 @@ resources:
               method.response.header.Content-Type: true
         Integration:
           Type: AWS
-          Credentials:
-            Fn::GetAtt:
-              - S3ReadRole
-              - Arn
+          Credentials: !GetAtt S3ReadRole.Arn
           Uri: arn:aws:apigateway:${self:provider.region}:s3:path/pdfapi-static/index.html
           IntegrationHttpMethod: GET
           IntegrationResponses:
@@ -125,28 +112,20 @@ resources:
     ScriptsResource:
       Type: AWS::ApiGateway::Resource
       Properties:
-        ParentId:
-          Fn::GetAtt:
-            - ApiGatewayRestApi
-            - RootResourceId
+        ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
         PathPart: javascripts
-        RestApiId:
-          Ref: ApiGatewayRestApi
+        RestApiId: !Ref ApiGatewayRestApi
     ScriptsProxyResource:
       Type: AWS::ApiGateway::Resource
       Properties:
-        ParentId:
-          Ref: ScriptsResource
+        ParentId: !Ref ScriptsResource
         PathPart: "{proxy+}"
-        RestApiId:
-          Ref: ApiGatewayRestApi
+        RestApiId: !Ref ApiGatewayRestApi
     ScriptsProxyMethod:
       Type: AWS::ApiGateway::Method
       Properties:
-        ResourceId:
-          Ref: ScriptsProxyResource
-        RestApiId:
-          Ref: ApiGatewayRestApi
+        ResourceId: !Ref ScriptsProxyResource
+        RestApiId: !Ref ApiGatewayRestApi
         HttpMethod: GET
         AuthorizationType: NONE
         RequestParameters:
@@ -157,11 +136,8 @@ resources:
               method.response.header.Content-Type: true
         Integration:
           Type: AWS
-          Credentials:
-            Fn::GetAtt:
-              - S3ReadRole
-              - Arn
-          Uri: arn:aws:apigateway:${self:provider.region}:s3:path/pdfapi-static/javascripts/{key}
+          Credentials: !GetAtt S3ReadRole.Arn
+          Uri: arn:aws:apigateway:${self:provider.region}:s3:path/${file(config.json):production.s3_static}/javascripts/{key}
           RequestParameters:
             integration.request.path.key: method.request.path.proxy
           IntegrationHttpMethod: GET
@@ -170,3 +146,13 @@ resources:
               ResponseParameters:
                 method.response.header.Content-Type: integration.response.header.Content-Type
           PassthroughBehavior: WHEN_NO_MATCH
+
+plugins:
+  - serverless-apigw-binary
+
+custom:
+  apigwBinary:
+    types:
+      - application/zip
+      - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+      - multipart/form-data

@@ -20,6 +20,12 @@ async function connect(event, context) {
 }
 
 async function disconnect(event, context) {
+  await Connection.destroy({
+    where: {
+      connectionId: event.requestContext.connectionId,
+    }
+  }).catch(err => console.log(err));
+
   return { statusCode: 200 };
 }
 
@@ -29,15 +35,14 @@ async function selectJob(event, context) {
   let jobId = message.job;
   let ready = await db.ready();
   let job = await Job.findByPk(jobId);
-  console.log(JSON.stringify(job));
+  console.log('Job:', JSON.stringify(job));
   let queueUrl = job.queueUrl;
 
   var domain = event.requestContext.domain;
   var stage = event.requestContext.stage;
   var connectionId = event.requestContext.connectionId;
+  console.log('Connection:', connectionId);
   var callbackUrl = `https://${domain}/${stage}/@connections/${connectionId}`;
-  let done = false;
-  setTimeout(() => { done = true; }, 5 * 60 * 1000);
 
   Connection.create({
     job: jobId,

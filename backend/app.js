@@ -1,8 +1,8 @@
-var createError = require('http-errors');
+var cookieParser = require('cookie-parser');
 var express = require('express');
+var createError = require('http-errors');
 var fs = require('fs');
 var path = require('path');
-var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
 var app = express();
@@ -30,16 +30,6 @@ app.use(express.static('public'));
 var awsServerlessExpressMiddleware = require('aws-serverless-express/middleware');
 app.use(awsServerlessExpressMiddleware.eventContext());
 
-app.use(function(req, res, next) {
-  for (let i = 0; i < config.allow_origins.length; i++) {
-    if (req.headers.origin == config.allow_origins[i]) {
-      res.header("Access-Control-Allow-Origin", config.allow_origins[i]);
-      res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    }
-  }
-  next();
-});
-
 // var indexRouter = require('./routes/index');
 var casesRouter = require('./routes/cases');
 var articlesRouter = require('./routes/articles');
@@ -63,7 +53,11 @@ app.use(function(err, req, res, next) {
 
   // render the error page
   res.status(err.status || 500);
-  res.render('error');
+  res.json({
+    message: err.message,
+    error: err,
+    status: err.status || 500,
+  });
 });
 
 module.exports = app;

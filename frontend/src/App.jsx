@@ -24,6 +24,7 @@ class App extends Component {
     super(props);
     this.state = { jobs: {}, progress: {} };
     this.createJob = this.createJob.bind(this);
+    this.sockets = [];
   }
 
   async componentDidMount() {
@@ -50,8 +51,12 @@ class App extends Component {
     return progress.progress / progress.total;
   }
 
-  async trackJob(job) {
-    let socket = new WSP(`wss://${window.location.host}${window.location.pathname}`);
+  async trackJob(job, socketUrl) {
+    let socket = new WSP(socketUrl, {
+        packMessage: data => JSON.stringify(data),
+        unpackMessage: data => JSON.parse(data),
+    });
+    this.sockets.push(socket);
     try {
       await socket.open();
       console.log('Connected to socket.');
@@ -85,15 +90,18 @@ class App extends Component {
 
   async createJob(action, formData) {
     let buffer = '';
+    console.log(formData);
     let response = await fetch(new URL(action, locationSlash()).toString(), {
       method: 'POST',
       body: formData,
     });
     if (!response.status == 200) { return; }
 
-    let job = await response.json();
+    let body = await response.json();
+    let job = body.job;
+    let socket = body.websocket_api;
     console.log(job);
-    await this.trackJob(job);
+    await this.trackJob(job, socket);
   }
 
   render() {

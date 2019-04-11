@@ -29,4 +29,4 @@ function sync(sequelize) {
   return sequelize.sync();
 }
 
-module.exports = { sync, Job };
+module.exports = { sync, Job, Connection };

@@ -2,15 +2,16 @@ var express = require('express');
 var router = express.Router();
 
 var AWS = require('aws-sdk');
-var multer = require('multer');
+var formidable = require('formidable');
+var fs = require('fs');
 var path = require('path');
 var uuid = require('uuid/v4');
-
-var upload = multer({ storage: multer.memoryStorage() });
 
 var db = require('../sql');
 var models = require('../models');
 var Job = models.Job;
+
+var config = JSON.parse(fs.readFileSync(path.resolve(__dirname, '..', 'config.json')))[process.env.NODE_ENV];
 
 AWS.config.update({ region: 'us-east-1' });
 
@@ -25,15 +26,26 @@ router.get('/', async function(req, res) {
   res.json({ results: jobs });
 });
 
-router.post('/:command', upload.single('doc'), async function(req, res) {
+router.post('/:command', function(req, res, next) {
+  let form = new formidable.IncomingForm();
+  form.uploadDir = '/tmp';
+  form.parse(req, (err, fields, files) => {
+    if (err) { console.log(err); next(err); }
+    req.files = files;
+    next();
+  });
+}, async function(req, res) {
   let command = req.params['command'];
-  if (!['pull', 'perma'].includes(command) || !req.file) {
+  let file = req.files.doc;
+
+  if (!['pull', 'perma'].includes(command) || !file) {
     res.sendStatus(400);
     return;
   }
+  console.log('Stat:', fs.statSync(file.path));
+  console.log(req.apiGateway.event.body);
 
-  let file = req.file;
-  let originalName = file.originalname.replace(/\.docx$/, '');
+  let originalName = file.name.replace(/\.docx$/, '');
   let fileUuid = uuid();
   let ready = await db.ready();
   let job = await Job.create({
@@ -53,17 +65,17 @@ router.post('/:command', upload.single('doc'), async function(req, res) {
         ReceiveMessageWaitTimeSeconds: '20',
       },
     }).promise();
-    sqs.getQueueAttributes({
+    queueAttrs = await sqs.getQueueAttributes({
       QueueUrl: queueData.QueueUrl,
       AttributeNames: [ 'QueueArn' ],
-    }).promise().then(data => {
-      lambda.createEventSourceMapping({
-        EventSourceArn: data.QueueArn,
-        FunctionName: `pdfapi-${req.apiGateway.event.requestContext.stage}-fanout`,
-        BatchSize: 10,
-        Enabled: true,
-      });
-    }).catch(err => { console.log(err); });
+    }).promise();
+    console.log('Queue:', queueAttrs);
+    lambda.createEventSourceMapping({
+      EventSourceArn: queueAttrs.Attributes.QueueArn,
+      FunctionName: `journal-tools-socket-${req.apiGateway.event.requestContext.stage}-fanout`,
+      BatchSize: 10,
+      Enabled: true,
+    }).promise().catch(err => console.log(err));
   } catch (err) {
     console.log('Couldn\'t create queue:', err);
     res.sendStatus(500);
@@ -73,24 +85,28 @@ router.post('/:command', upload.single('doc'), async function(req, res) {
   let url = queueData.QueueUrl;
   await job.update({ queueUrl: url });
 
-  res.json(job);
+  try {
+    await s3.putObject({
+      Body: fs.createReadStream(file.path),
+      Bucket: config.s3_uploads,
+      Key: `${command}/${fileUuid}`,
+      ContentEncoding: file.encoding,
+      ContentType: file.mimetype,
+      ACL: 'private',
+      Metadata: {
+        'original-name': originalName,
+        'job-id': `${job.id}`,
+        'uuid': fileUuid,
+        'queue-url': url,
+      },
+    }).promise();
 
-  s3.putObject({
-    Body: file.buffer,
-    Bucket: 'autopull-uploads',
-    Key: `${command}/${fileUuid}`,
-    ACL: 'private',
-    Metadata: {
-      'original-name': originalName,
-      'job-id': `${job.id}`,
-      'uuid': fileUuid,
-      'queue-url': url,
-    },
-  }, (err, data) => {
-    if (err) {
-      console.log(err);
-    }
-  });
+    console.log('Upload finished.');
+    res.json({ job: job, websocket_api: config.websocket_api });
+  } catch (e) {
+    console.log('Couldn\'t upload:', e);
+    res.sendStatus(500);
+  }
 });
 
 module.exports = router;

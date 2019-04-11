@@ -3,6 +3,7 @@ service: journal-tools-socket
 provider:
   name: aws
   runtime: nodejs8.10
+  memorySize: 256
   websocketApiRouteSelectionExpression: $request.body.action
 
   environment:
@@ -21,7 +22,7 @@ plugins:
 
 functions:
   socket:
-    timeout: 180
+    timeout: 6
     handler: socket.message
     events:
       - websocket: $connect
@@ -29,5 +30,5 @@ functions:
       - websocket: selectJob
       - websocket: $default
   fanout:
-    timeout: 180
+    timeout: 6
     handler: fanout.handler
