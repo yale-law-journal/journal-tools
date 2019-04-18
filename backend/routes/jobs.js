@@ -23,7 +23,7 @@ let lambda = new AWS.Lambda();
 router.get('/', async function(req, res) {
   let ready = await db.ready();
   let jobs = await Job.findAll();
-  res.json({ results: jobs });
+  res.json({ results: jobs, websocket_api: process.env.SOCKET_URL });
 });
 
 router.post('/:command', function(req, res, next) {
@@ -45,47 +45,31 @@ router.post('/:command', function(req, res, next) {
   console.log('Stat:', fs.statSync(file.path));
   console.log(req.apiGateway.event.body);
 
+  let arn = process.env.PROGRESS_QUEUE_ARN;
+  let components = arn.split(':');
+  let name = components[components.length - 1];
+  let userId = components[components.length - 2];
+  let queueUrlPromise = sqs.getQueueUrl({
+    QueueName: name,
+    QueueOwnerAWSAccountId: userId,
+  }).promise();
+
   let originalName = file.name.replace(/\.docx$/, '');
   let fileUuid = uuid();
   let ready = await db.ready();
   let job = await Job.create({
     command: command,
     fileName: originalName,
+    progress: 0,
+    total: 1,
     completed: false,
     startTime: Date.now(),
     s3uuid: fileUuid,
   });
 
-  let queueName = `autopull-${fileUuid}`;
-  let queueData = null;
   try {
-    queueData = await sqs.createQueue({
-      QueueName: queueName,
-      Attributes: {
-        ReceiveMessageWaitTimeSeconds: '20',
-      },
-    }).promise();
-    queueAttrs = await sqs.getQueueAttributes({
-      QueueUrl: queueData.QueueUrl,
-      AttributeNames: [ 'QueueArn' ],
-    }).promise();
-    console.log('Queue:', queueAttrs);
-    lambda.createEventSourceMapping({
-      EventSourceArn: queueAttrs.Attributes.QueueArn,
-      FunctionName: `journal-tools-socket-${req.apiGateway.event.requestContext.stage}-fanout`,
-      BatchSize: 10,
-      Enabled: true,
-    }).promise().catch(err => console.log(err));
-  } catch (err) {
-    console.log('Couldn\'t create queue:', err);
-    res.sendStatus(500);
-    return;
-  }
-
-  let url = queueData.QueueUrl;
-  await job.update({ queueUrl: url });
-
-  try {
+    let queueData = await queueUrlPromise;
+    let queueUrl = queueData.QueueUrl;
     await s3.putObject({
       Body: fs.createReadStream(file.path),
       Bucket: config.s3_uploads,
@@ -97,12 +81,12 @@ router.post('/:command', function(req, res, next) {
         'original-name': originalName,
         'job-id': `${job.id}`,
         'uuid': fileUuid,
-        'queue-url': url,
+        'queue-url': queueUrl,
       },
     }).promise();
 
     console.log('Upload finished.');
-    res.json({ job: job, websocket_api: config.websocket_api });
+    res.json({ job: job });
   } catch (e) {
     console.log('Couldn\'t upload:', e);
     res.sendStatus(500);

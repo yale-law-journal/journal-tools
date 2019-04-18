@@ -1,8 +1,7 @@
 var AWS = require('aws-sdk');
-var aws4 = require('aws4');
 var fs = require('fs');
-var http = require('http');
 var path = require('path');
+var { URL } = require('url');
 
 var config = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'config.json')))[process.env.NODE_ENV];
 
@@ -16,91 +15,80 @@ var Connection = models.Connection;
 var sqs = new AWS.SQS();
 
 class ConnectionsApi {
-  constructor(event, context, connectionIds) {
+  constructor(connectionIds) {
+    let url = new URL(process.env.CONNECTIONS_URL);
+    let endpoint = `${url.protocol}//${url.host}/dev`;
+    this.apig = new AWS.ApiGatewayManagementApi({ endpoint: endpoint });
     this.connectionIds = connectionIds;
-    this.domain = event.requestContext.domain;
-    this.stage = event.requestContext.stage;
   }
 
-  postJson(obj) {
-    for (let i = 0; i < connectionIds.length; i++) {
-      let connectionId = connectionIds[i];
-      let path = `/${this.stage}/@connections/${connectionId}`;
-      let opts = {
-        host: this.domain,
-        path: path,
-        method: 'POST',
-        Data: JSON.stringify(obj) + '\n',
-      };
-      aws4.sign(opts);
-      return new Promise((resolve, reject) => {
-        let request = http.request(opts, incoming => {
-          if (incoming.statusCode == 200) {
-            resolve(incoming);
-          } else {
-            reject(incoming);
-            console.log('Bad request...');
-          }
-        });
-        request.send(JSON.stringify(obj) + '\n');
-      });
-    }
+  async postJson(obj) {
+    console.log('Posting to connections:', this.connectionIds);
+    await Promise.all(this.connectionIds.map(connectionId => {
+      let request = this.apig.postToConnection({
+        ConnectionId: connectionId,
+        Data: JSON.stringify(obj),
+      }).promise().catch(err => console.log(err));
+    }));
   }
 }
 
 exports.handler = async (event, context) => {
-  let queueDeleted = false;
   let messages = event.Records.map(o => JSON.parse(o.body));
-  for (i = 0; i < messages.length; i++) {
+  await db.ready();
+  let connections = await Connection.findAll();
+  let connectionIds = connections.map(c => c.connectionId);
+  let connectionsApi = new ConnectionsApi(connectionIds);
+  for (let i = 0; i < messages.length; i++) {
     let message = messages[i];
     console.log('Message:', message);
-    let connectionIds = await Connection.findAll({ where: { job: message.job_id } });
-    let connectionsApi = new ConnectionsApi(event, context, connectionIds);
     let job = await Job.findByPk(message.job_id);
     if (message.message === 'progress') {
-      if (message.progress >= progress) {
-        progress = message.progress;
-        connectionsApi.postJson(connectionId, {
-          id: job.id,
-          progress: progress,
-          total: message.total,
-        });
-        job.update({
-          progress: progress,
-          total: message.total,
-        }, () => {});
+      if (!job.progress || message.progress / message.total >= job.progress / job.total) {
+        await Promise.all([
+          connectionsApi.postJson({
+            id: job.id,
+            progress: message.progress,
+            total: message.total,
+          }),
+          job.update({
+            progress: message.progress,
+            total: message.total,
+          }),
+        ]).catch(err => console.log(err));
       }
     } else if (message.message === 'complete') {
-      sqs.deleteQueue({ QueueUrl: message.queue_url }, () => {});
-      queueDeleted = true;
-      connectionsApi.postJson(connectionId, {
-        id: job.id,
-        completed: true,
-        resultUrl: message.result_url,
-      });
-      job.update({
-        id: job.id,
-        completed: true,
-        progress: 1,
-        total: 1,
-        endTime: Date.now(),
-        resultUrl: message.result_url,
-      }, () => {});
+      await Promise.all([
+        connectionsApi.postJson({
+          id: job.id,
+          completed: true,
+          resultUrl: message.result_url,
+        }),
+        job.update({
+          id: job.id,
+          completed: true,
+          progress: 1,
+          total: 1,
+          endTime: Date.now(),
+          resultUrl: message.result_url,
+        }),
+      ]).catch(err => console.log(err));
     }
   }
 
-  if (!queueDeleted && messages.length > 0) {
-    let arn = messages[0].eventSourceARN;
+  if (messages.length > 0) {
+    let arn = event.Records[0].eventSourceARN;
     let components = arn.split(':');
     let name = components[components.length - 1];
     let userId = components[components.length - 2];
-    let queueUrl = await sqs.getQueueUrl({
+    let queueData = await sqs.getQueueUrl({
       QueueName: name,
       QueueOwnerAWSAccountId: userId,
-    });
-    sqs.deleteMessagesBatch({
+    }).promise().catch(err => console.log(err));
+    let queueUrl = queueData.QueueUrl;
+    sqs.deleteMessageBatch({
       QueueUrl: queueUrl,
-      Entries: messages.map(m => ({
+      Entries: event.Records.map(m => ({
         Id: m.messageId,
         ReceiptHandle: m.receiptHandle,
       })),

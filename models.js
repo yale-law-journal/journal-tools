@@ -24,8 +24,6 @@ function sync(sequelize) {
     connectionId: Sequelize.STRING,
   }, { sequelize });
 
-  Job.hasMany(Connection);
-
   return sequelize.sync();
 }
 

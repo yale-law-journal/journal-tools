@@ -8,14 +8,41 @@ provider:
 
   environment:
     NODE_ENV: production
+    PROGRESS_QUEUE_ARN: !GetAtt ProgressQueue.Arn
+    CONNECTIONS_URL:
+      Fn::Join:
+        - ""
+        - - https://
+          - !Ref WebsocketsApi
+          - .execute-api.${self:custom.region}.amazonaws.com
+          - /${self:custom.stage}/@connections
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - execute-api:ManageConnections
+      Resource:
+        Fn::Join:
+          - ":"
+          - - arn
+            - aws
+            - execute-api
+            - ${self:custom.region}
+            - !Ref 'AWS::AccountId'
+            - Fn::Join:
+                - /
+                - - !Ref WebsocketsApi
+                  - "*"
 
   iamManagedPolicies:
     - arn:aws:iam::aws:policy/AmazonRDSDataFullAccess
     - arn:aws:iam::aws:policy/AmazonSQSFullAccess
+    - arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess
 
 package:
   exclude:
-    - node_modules/**/aws-sdk/**
+    # - node_modules/**/aws-sdk/**
+    - node_modules/**
 
 plugins:
   - serverless-websockets-plugin
@@ -27,8 +54,50 @@ functions:
     events:
       - websocket: $connect
       - websocket: $disconnect
-      - websocket: selectJob
       - websocket: $default
+    layers:
+      - Ref: DepsLambdaLayer
   fanout:
     timeout: 6
     handler: fanout.handler
+    events:
+      - sqs:
+          arn: !GetAtt ProgressQueue.Arn
+    layers:
+      - Ref: DepsLambdaLayer
+
+layers:
+  deps:
+    path: deps
+    compatibleRuntimes:
+      - nodejs8.10
+
+resources:
+  Resources:
+    ProgressQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: journal-tools-progress
+        MessageRetentionPeriod: 300
+        ReceiveMessageWaitTimeSeconds: 20
+  Outputs:
+    SocketUrlExport:
+      Export:
+        Name: SocketUrl-${self:custom.stage}
+      Value:
+        Fn::Join:
+          - ""
+          - - wss://
+            - !Ref WebsocketsApi
+            - .execute-api.
+            - ${self:custom.region}
+            - .amazonaws.com/
+            - ${self:custom.stage}
+    ProgressQueueExport:
+      Export:
+        Name: ProgressQueueArn-${self:custom.stage}
+      Value: !GetAtt ProgressQueue.Arn
+
+custom:
+  stage: ${opt:stage, self:provider.stage}
+  region: ${opt:region, self:provider.region}

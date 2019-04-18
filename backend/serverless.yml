@@ -10,6 +10,8 @@ provider:
 
   environment:
     NODE_ENV: production
+    PROGRESS_QUEUE_ARN: !ImportValue ProgressQueueArn-${self:custom.stage}
+    SOCKET_URL: !ImportValue SocketUrl-${self:custom.stage}
 
   iamRoleStatements:
     - Effect: Allow
@@ -43,6 +45,7 @@ provider:
   iamManagedPolicies:
     - arn:aws:iam::aws:policy/AmazonRDSDataFullAccess
     - arn:aws:iam::aws:policy/AmazonSQSFullAccess
+    - arn:aws:iam::aws:policy/AmazonESFullAccess
 
 package:
   exclude:
@@ -137,7 +140,7 @@ resources:
         Integration:
           Type: AWS
           Credentials: !GetAtt S3ReadRole.Arn
-          Uri: arn:aws:apigateway:${self:provider.region}:s3:path/${file(config.json):production.s3_static}/javascripts/{key}
+          Uri: arn:aws:apigateway:${self:custom.region}:s3:path/${file(config.json):production.s3_static}/javascripts/{key}
           RequestParameters:
             integration.request.path.key: method.request.path.proxy
           IntegrationHttpMethod: GET
@@ -151,6 +154,8 @@ plugins:
   - serverless-apigw-binary
 
 custom:
+  stage: ${opt:stage, self:provider.stage}
+  region: ${opt:region, self:provider.region}
   apigwBinary:
     types:
       - application/zip

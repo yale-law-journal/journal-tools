@@ -24,7 +24,7 @@ class App extends Component {
     super(props);
     this.state = { jobs: {}, progress: {} };
     this.createJob = this.createJob.bind(this);
-    this.sockets = [];
+    this.socket = null;
   }
 
   async componentDidMount() {
@@ -32,7 +32,31 @@ class App extends Component {
     if (!response.ok) {
       console.log('Failed to fetch job list.');
     }
-    let jobs = await response.json();
+    let result = await response.json();
+    this.setState({ jobs: result.results });
+
+    let socketUrl = result.websocket_api;
+    this.socket = new WSP(socketUrl, {
+        packMessage: data => JSON.stringify(data),
+        unpackMessage: data => JSON.parse(data),
+    });
+    this.socket.open().catch(err => console.log(err));
+    this.socket.onUnpackedMessage.addListener(message => {
+      console.log('Message:', message);
+      if (message.progress !== undefined) {
+        update(message.id, job => job, prevProgress =>
+          progressRatio(message.progress) > progressRatio(prevProgress) ? message.progress : prevProgress
+        );
+      } else if (message.completed !== undefined) {
+        update(message.id,
+          job => Object.assign(job, { resultUrl: message.resultUrl }),
+          progress => ({ progress: 1, total: 1 }),
+        );
+      }
+    });
+    this.socket.onError.addListener(err => {
+      console.log(err);
+    });
   }
 
   update(id, jobF, progressF) {
@@ -51,43 +75,6 @@ class App extends Component {
     return progress.progress / progress.total;
   }
 
-  async trackJob(job, socketUrl) {
-    let socket = new WSP(socketUrl, {
-        packMessage: data => JSON.stringify(data),
-        unpackMessage: data => JSON.parse(data),
-    });
-    this.sockets.push(socket);
-    try {
-      await socket.open();
-      console.log('Connected to socket.');
-      socket.sendPacked({ action: 'selectJob', job: job.id });
-    } catch (e) {
-      console.log(e);
-      return;
-    }
-
-    socket.onError.addListener(err => {
-      console.log(err);
-    });
-
-    socket.onUnpackedMessage.addListener(message => {
-      console.log('Message:', message);
-      if (message.result !== undefined) {
-        job = objects[0].result;
-        update(job.id, () => job, () => ({ progress: 0, total: 1 }));
-      } else if (message.progress !== undefined) {
-        update(message.id, job => job, prevProgress =>
-          progressRatio(message.progress) > progressRatio(prevProgress) ? message.progress : prevProgress
-        );
-      } else if (message.completed !== undefined) {
-        update(message.id,
-          job => Object.assign(job, { resultUrl: message.resultUrl }),
-          progress => ({ progress: 1, total: 1 }),
-        );
-      }
-    });
-  }
-
   async createJob(action, formData) {
     let buffer = '';
     console.log(formData);
@@ -99,9 +86,8 @@ class App extends Component {
 
     let body = await response.json();
     let job = body.job;
-    let socket = body.websocket_api;
     console.log(job);
-    await this.trackJob(job, socket);
+    this.update(job.id, () => job, () => ({ progress: 0, total: 1 }));
   }
 
   render() {
