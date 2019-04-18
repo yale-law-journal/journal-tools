@@ -43,12 +43,13 @@ class App extends Component {
     this.socket.open().catch(err => console.log(err));
     this.socket.onUnpackedMessage.addListener(message => {
       console.log('Message:', message);
+      let ratio = o => o.progress / o.total;
       if (message.progress !== undefined) {
-        update(message.id, job => job, prevProgress =>
-          progressRatio(message.progress) > progressRatio(prevProgress) ? message.progress : prevProgress
+        this.update(message.id, job => job, prevProgress =>
+          ratio(message) > ratio(prevProgress) ? message : prevProgress
         );
       } else if (message.completed !== undefined) {
-        update(message.id,
+        this.update(message.id,
           job => Object.assign(job, { resultUrl: message.resultUrl }),
           progress => ({ progress: 1, total: 1 }),
         );
@@ -71,13 +72,8 @@ class App extends Component {
     }));
   }
 
-  progressRatio(progress) {
-    return progress.progress / progress.total;
-  }
-
   async createJob(action, formData) {
     let buffer = '';
-    console.log(formData);
     let response = await fetch(new URL(action, locationSlash()).toString(), {
       method: 'POST',
       body: formData,
@@ -86,14 +82,14 @@ class App extends Component {
 
     let body = await response.json();
     let job = body.job;
-    console.log(job);
+    console.log('Job:', job);
     this.update(job.id, () => job, () => ({ progress: 0, total: 1 }));
   }
 
   render() {
     let compare = (a, b) => b.id - a.id;
     let jobCards = Object.values(this.state.jobs).slice().sort(compare).map(job =>
-      <JobCard {...job} progress={this.state.progress[job.id]} key={job.id} />
+      <JobCard job={job} progress={this.state.progress[job.id]} key={job.id} />
     );
     return <>
       <Navbar bg="dark" variant="dark" className="justify-content-between">
