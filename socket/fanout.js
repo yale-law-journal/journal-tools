@@ -16,8 +16,7 @@ var sqs = new AWS.SQS();
 
 class ConnectionsApi {
   constructor(connectionIds) {
-    let url = new URL(process.env.CONNECTIONS_URL);
-    let endpoint = `${url.protocol}//${url.host}/dev`;
+    let endpoint = process.env.CONNECTIONS_URL.replace('/@connections', '');
     this.apig = new AWS.ApiGatewayManagementApi({ endpoint: endpoint });
     this.connectionIds = connectionIds;
   }
