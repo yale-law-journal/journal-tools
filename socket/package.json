@@ -14,7 +14,7 @@
   "dependencies": {
     "aws4": "^1.8.0",
     "pg": "^7.9.0",
-    "sequelize": "^5.2.9",
+    "sequelize": "^5.7.0",
     "serverless-websockets-plugin": "^1.0.0"
   }
 }
