@@ -1,9 +1,12 @@
+var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
 var express = require('express');
+var session = require('express-session');
 var createError = require('http-errors');
 var fs = require('fs');
-var path = require('path');
 var logger = require('morgan');
+var passport = require('passport');
+var path = require('path');
 
 var app = express();
 
@@ -18,6 +21,10 @@ elasticsearch.connect(config.elasticsearch, function(err) {
   }
 })
 
+if (process.env.LAMBDA_TASK_ROOT) {
+  app.set('trust proxy', true);
+}
+
 var sql = require('./sql');
 sql.connect(config.postgres);
 
@@ -25,20 +32,42 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static('public'));
+app.use(bodyParser.urlencoded({ extended: false }));
+
+try {
+  var SequelizeStore = require('connect-session-sequelize')(session.Store);
+  app.use(session({
+    secret: config.session_secret,
+    store: new SequelizeStore({ db: sql.get() }),
+    resave: false,
+    saveUninitialized: false,
+  }));
+} catch (e) { console.log(e); }
+app.use(passport.initialize());
+app.use(passport.session());
 
 var awsServerlessExpressMiddleware = require('aws-serverless-express/middleware');
 app.use(awsServerlessExpressMiddleware.eventContext());
+
+app.use(function(req, res, next) {
+  if (req.path.startsWith('/api/auth') || req.isAuthenticated()) {
+    next();
+  } else {
+    res.status(401);
+  }
+});
 
 // var indexRouter = require('./routes/index');
 var casesRouter = require('./routes/cases');
 var articlesRouter = require('./routes/articles');
 var jobsRouter = require('./routes/jobs');
+var authRouter = require('./routes/auth');
 
 // app.use('/', indexRouter);
 app.use('/api/cases', casesRouter);
 app.use('/api/articles', articlesRouter);
 app.use('/api/jobs', jobsRouter);
+app.use('/api/auth', authRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

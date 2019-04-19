@@ -10,6 +10,13 @@ provider:
 
   environment:
     NODE_ENV: production
+    ROOT_URL:
+      Fn::Join:
+        - ""
+        - - https://
+          - !Ref ApiGatewayRestApi
+          - .execute-api.${self:custom.region}.amazonaws.com
+          - /${self:custom.stage}
     PROGRESS_QUEUE_ARN: !ImportValue ProgressQueueArn-${self:custom.stage}
     SOCKET_URL: !ImportValue SocketUrl-${self:custom.stage}
 
@@ -54,7 +61,7 @@ package:
     - bin/**
     - cleaning/**
     - data/**
-    - node_modules/**/aws-sdk/**
+    - node_modules/**
     - src/**
     - venv/**
   include:
@@ -73,6 +80,17 @@ functions:
     timeout: 15
     events:
       - http: ANY /api/{proxy+}
+    layers:
+      - Ref: DepsLambdaLayer
+
+layers:
+  deps:
+    path: deps
+    compatibleRuntimes:
+      - nodejs8.10
+    package:
+      exclude:
+        - nodejs/node_modules/**/aws-sdk/**
 
 resources:
   Resources:

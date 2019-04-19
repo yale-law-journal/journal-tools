@@ -2,6 +2,7 @@ var Sequelize = require('sequelize');
 
 class Job extends Sequelize.Model {}
 class Connection extends Sequelize.Model {}
+class User extends Sequelize.Model {}
 
 function sync(sequelize) {
   Job.init({
@@ -24,7 +25,13 @@ function sync(sequelize) {
     connectionId: Sequelize.STRING,
   }, { sequelize });
 
+  User.init({
+    id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
+    email: Sequelize.STRING,
+    googleId: Sequelize.STRING,
+  }, { sequelize });
+
   return sequelize.sync();
 }
 
-module.exports = { sync, Job, Connection };
+module.exports = { sync, Job, Connection, User };

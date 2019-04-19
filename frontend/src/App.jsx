@@ -11,6 +11,7 @@ import Row from 'react-bootstrap/Row';
 
 import FileInputCard from './components/FileInputCard';
 import JobCard from './components/JobCard';
+import LoginForm from './components/LoginForm';
 
 var decoder = new TextDecoder('utf-8');
 
@@ -22,7 +23,7 @@ function locationSlash() {
 class App extends Component {
   constructor(props) {
     super(props);
-    this.state = { jobs: {}, progress: {} };
+    this.state = { jobs: {}, progress: {}, loginInfo: null };
     this.createJob = this.createJob.bind(this);
     this.socket = null;
   }
@@ -72,6 +73,10 @@ class App extends Component {
     }));
   }
 
+  login(loginInfo) {
+    this.setState({ loginInfo: loginInfo });
+  }
+
   async createJob(action, formData) {
     let buffer = '';
     let response = await fetch(new URL(action, locationSlash()).toString(), {
@@ -94,10 +99,7 @@ class App extends Component {
     return <>
       <Navbar bg="dark" variant="dark" className="justify-content-between">
         <Navbar.Brand>Journal Tools</Navbar.Brand>
-        <Form inline>
-          <FormControl placeholder="Username" aria-label="Username" className="mr-sm-2" />
-          <Button type="submit">Login</Button>
-        </Form>
+        <LoginForm login={this.login} />
       </Navbar>
       <Container className="pt-2 justify-content-center">
         <Row className="justify-content-center">

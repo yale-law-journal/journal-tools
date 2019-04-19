@@ -37,7 +37,6 @@ provider:
   iamManagedPolicies:
     - arn:aws:iam::aws:policy/AmazonRDSDataFullAccess
     - arn:aws:iam::aws:policy/AmazonSQSFullAccess
-    - arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess
 
 package:
   exclude:
