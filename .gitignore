@@ -14,4 +14,4 @@ config.json
 /backend/data/us
 /backend/data/orig
 /backend/data/full
-/frontend/public/javascripts/index.bundle.js
+/frontend/public/javascripts
