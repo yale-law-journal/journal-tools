@@ -26,6 +26,7 @@ try {
               googleId: profile.id,
             },
             defaults: {
+              name: profile.displayName,
               email: profile.emails[0].value,
             }
           });

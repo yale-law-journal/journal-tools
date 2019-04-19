@@ -11,7 +11,7 @@ import Row from 'react-bootstrap/Row';
 
 import FileInputCard from './components/FileInputCard';
 import JobCard from './components/JobCard';
-import LoginForm from './components/LoginForm';
+import LoginModal from './components/LoginModal';
 
 var decoder = new TextDecoder('utf-8');
 
@@ -23,15 +23,26 @@ function locationSlash() {
 class App extends Component {
   constructor(props) {
     super(props);
-    this.state = { jobs: {}, progress: {}, loginInfo: null };
+    this.state = { jobs: {}, progress: {}, loginInfo: null, loading: true };
     this.createJob = this.createJob.bind(this);
     this.socket = null;
   }
 
+  async getLoginStatus() {
+    let response = await fetch('api/auth');
+    if (response.ok) {
+      this.setState({ loginInfo: await response.json() });
+    }
+    this.setState({ loading: false });
+  }
+
   async componentDidMount() {
+    let loginStatus = this.getLoginStatus();
+
     let response = await fetch('api/jobs');
     if (!response.ok) {
       console.log('Failed to fetch job list.');
+      return;
     }
     let result = await response.json();
     this.setState({ jobs: result.results });
@@ -59,6 +70,8 @@ class App extends Component {
     this.socket.onError.addListener(err => {
       console.log(err);
     });
+
+    await loginStatus;
   }
 
   update(id, jobF, progressF) {
@@ -71,10 +84,6 @@ class App extends Component {
         [id]: progressF(prevState.progress[id] || {}),
       }),
     }));
-  }
-
-  login(loginInfo) {
-    this.setState({ loginInfo: loginInfo });
   }
 
   async createJob(action, formData) {
@@ -96,10 +105,12 @@ class App extends Component {
     let jobCards = Object.values(this.state.jobs).slice().sort(compare).map(job =>
       <JobCard job={job} progress={this.state.progress[job.id]} key={job.id} />
     );
+    let loginInfo = this.state.loginInfo ? `Signed in as ${this.state.loginInfo.name}` : '';
     return <>
+      <LoginModal show={!this.state.loading && !Boolean(this.state.loginInfo)} />
       <Navbar bg="dark" variant="dark" className="justify-content-between">
         <Navbar.Brand>Journal Tools</Navbar.Brand>
-        <LoginForm login={this.login} />
+        <Navbar.Text>{ loginInfo }</Navbar.Text>
       </Navbar>
       <Container className="pt-2 justify-content-center">
         <Row className="justify-content-center">
