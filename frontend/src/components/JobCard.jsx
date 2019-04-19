@@ -1,3 +1,4 @@
+import moment from 'moment';
 import React, { Component } from 'react';
 import Button from 'react-bootstrap/Button';
 import Card from 'react-bootstrap/Card';
@@ -31,10 +32,13 @@ class JobCard extends Component {
         <Card className="mt-3" style={{ height: 'calc(100% - 1rem)' }}>
           <Card.Body>
             <Row className="justify-content-center">
-              <Card.Title>{ JOB_TYPES[this.props.job.command] } {this.props.job.fileName}</Card.Title>
+              <Card.Title>{ JOB_TYPES[this.props.job.command] } { this.props.job.fileName }</Card.Title>
+            </Row>
+            <Row className="justify-content-center mb-2">
+              <Card.Subtitle>{ moment(this.props.job.startTime).calendar() }</Card.Subtitle>
             </Row>
             <Row className="justify-content-center">
-              {progress}
+              { progress }
             </Row>
           </Card.Body>
         </Card>
