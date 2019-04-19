@@ -38,10 +38,13 @@ exports.handler = async (event, context) => {
   let connections = await Connection.findAll();
   let connectionIds = connections.map(c => c.connectionId);
   let connectionsApi = new ConnectionsApi(connectionIds);
-  for (let i = 0; i < messages.length; i++) {
-    let message = messages[i];
+  for (message of messages) {
     console.log('Message:', message);
     let job = await Job.findByPk(message.job_id);
+    if (!job) {
+      console.log('Couldn\'t find job', message.job_id);
+      continue;
+    }
     if (message.message === 'progress') {
       if (!job.progress || message.progress / message.total >= job.progress / job.total) {
         await Promise.all([

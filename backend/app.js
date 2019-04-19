@@ -53,7 +53,7 @@ app.use(function(req, res, next) {
   if (req.path.startsWith('/api/auth') || req.isAuthenticated()) {
     next();
   } else {
-    res.status(401);
+    next(createError(401));
   }
 });
 

@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router();
 
 var fs = require('fs');
+var createError = require('http-errors');
 var path = require('path');
 
 var passport = require('../passport');
@@ -15,7 +16,7 @@ router.get('/', function(req, res, next) {
       email: req.user.email,
     });
   } else {
-    res.status(401);
+    next(createError(401));
   }
 });
 

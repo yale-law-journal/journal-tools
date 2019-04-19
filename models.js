@@ -39,6 +39,8 @@ function sync(sequelize) {
     id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
     name: Sequelize.STRING,
     authorizedEmails: Sequelize.ARRAY(Sequelize.STRING),
+    permaApiKey: Sequelize.STRING,
+    permaFolder: Sequelize.STRING,
   }, { sequelize });
 
   Organization.hasMany(User);

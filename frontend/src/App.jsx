@@ -45,7 +45,10 @@ class App extends Component {
       return;
     }
     let result = await response.json();
-    this.setState({ jobs: result.results });
+    this.setState({
+      jobs: result.results,
+      progress: result.results.map(job => ({ progress: job.progress, total: job.total })),
+    });
 
     let socketUrl = result.websocket_api;
     this.socket = new WSP(socketUrl, {
@@ -62,7 +65,11 @@ class App extends Component {
         );
       } else if (message.completed !== undefined) {
         this.update(message.id,
-          job => Object.assign(job, { resultUrl: message.resultUrl }),
+          job => ({
+            ...job,
+            resultUrl: message.resultUrl,
+            completed: true,
+          }),
           progress => ({ progress: 1, total: 1 }),
         );
       }
@@ -105,7 +112,7 @@ class App extends Component {
     let jobCards = Object.values(this.state.jobs).slice().sort(compare).map(job =>
       <JobCard job={job} progress={this.state.progress[job.id]} key={job.id} />
     );
-    let loginInfo = this.state.loginInfo ? `Signed in as ${this.state.loginInfo.name}` : '';
+    let loginInfo = this.state.loginInfo ? `Signed in as ${this.state.loginInfo.name}` : 'Signed out';
     return <>
       <LoginModal show={!this.state.loading && !Boolean(this.state.loginInfo)} />
       <Navbar bg="dark" variant="dark" className="justify-content-between">
@@ -115,7 +122,9 @@ class App extends Component {
       <Container className="pt-2 justify-content-center">
         <Row className="justify-content-center">
           <FileInputCard title="Perma Links" action="api/jobs/perma" createJob={this.createJob} />
-          <FileInputCard title="Bookpull Spreadsheet" action="api/jobs/pull" createJob={this.createJob} />
+          <FileInputCard title="Bookpull Spreadsheet" action="api/jobs/pull" createJob={this.createJob}>
+            <Form.Control name="pullers" as="textarea" placeholder="Pullers (one per line)" className="h-100 w-100" style={{ resize: 'none' }} />
+          </FileInputCard>
         </Row>
         <Row>
           { jobCards }

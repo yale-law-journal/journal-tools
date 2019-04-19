@@ -63,6 +63,8 @@ class FileInputCard extends Component {
   };
 
   render() {
+    let content = React.Children.count(this.props.children) ? this.props.children
+      : <Card.Subtitle>Drop file here</Card.Subtitle>;
     return (
       <Col md={6} lg={4}>
         <Card bg={ this.state.dropping ? 'secondary' : 'light' } className="mt-3" onDrop={this.drop} onDragOver={this.dragOver} onDragLeave={this.dragLeave}>
@@ -70,19 +72,21 @@ class FileInputCard extends Component {
             <Row className="justify-content-center">
               <Card.Title>{ this.props.title }</Card.Title>
             </Row>
-            <Row className="justify-content-center align-items-center" style={{ height: '6rem' }}>
-              <Card.Subtitle>Drop file here</Card.Subtitle>
-            </Row>
-            <Form method="POST" action={this.props.action} ref={this.form} onSubmit={this.submit} inline>
-              <Col className="custom-file align-items-bottom">
-                <Form.Control type="file" ref={this.fileInput} accept=".docx" name="doc" onChange={this.fileChange} />
-                <Form.Label className="custom-file-label text-nowrap overflow-hidden" style={{ justifyContent: 'left', cursor: 'pointer' }} onClick={this.fileSelect}>
-                  { this.state.files ? this.state.files[0].name.replace(/\.docx$/, '') : 'File...' }
-                </Form.Label>
-              </Col>
-              <Col className="col-auto pr-0">
-                <Button type="submit">Submit</Button>
-              </Col>
+            <Form method="POST" action={this.props.action} ref={this.form} onSubmit={this.submit}>
+              <Row className="justify-content-center align-items-center mr-0 ml-0 mb-3" style={{ height: '6rem' }}>
+                { content }
+              </Row>
+              <Row className="mr-0 ml-0">
+                <Col className="custom-file align-items-bottom">
+                  <Form.Control type="file" ref={this.fileInput} accept=".docx" name="doc" onChange={this.fileChange} />
+                  <Form.Label className="custom-file-label text-nowrap overflow-hidden" style={{ justifyContent: 'left', cursor: 'pointer' }} onClick={this.fileSelect}>
+                    { this.state.files ? this.state.files[0].name.replace(/\.docx$/, '') : 'File...' }
+                  </Form.Label>
+                </Col>
+                <Col className="col-auto pr-0">
+                  <Button type="submit">Submit</Button>
+                </Col>
+              </Row>
             </Form>
           </Card.Body>
         </Card>

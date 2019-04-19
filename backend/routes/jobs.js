@@ -24,7 +24,7 @@ router.get('/', async function(req, res) {
   let ready = await db.ready();
   let jobs = await Job.findAll({
     where: {
-      userId: req.user.id
+      UserId: req.user.id
     }
   });
   res.json({ results: jobs, websocket_api: process.env.SOCKET_URL });
@@ -35,6 +35,7 @@ router.post('/:command', function(req, res, next) {
   form.uploadDir = '/tmp';
   form.parse(req, (err, fields, files) => {
     if (err) { console.log(err); next(err); }
+    req.fields = fields;
     req.files = files;
     next();
   });
@@ -46,8 +47,7 @@ router.post('/:command', function(req, res, next) {
     res.sendStatus(400);
     return;
   }
-  console.log('Stat:', fs.statSync(file.path));
-  console.log(req.apiGateway.event.body);
+  console.log('Fields:', req.fields);
 
   let arn = process.env.PROGRESS_QUEUE_ARN;
   let components = arn.split(':');
@@ -69,6 +69,7 @@ router.post('/:command', function(req, res, next) {
     completed: false,
     startTime: Date.now(),
     s3uuid: fileUuid,
+    UserId: req.user.id,
   });
 
   try {
@@ -86,6 +87,7 @@ router.post('/:command', function(req, res, next) {
         'job-id': `${job.id}`,
         'uuid': fileUuid,
         'queue-url': queueUrl,
+        'pullers': encodeURI(req.fields.pullers),
       },
     }).promise();
 
