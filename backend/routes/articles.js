@@ -58,7 +58,13 @@ async function checkES(journal, volume, title) {
     }
   };
 
-  let result = await db.get().search(esQuery);
+  let result;
+  try {
+    result = await db.get().search(esQuery);
+  } catch (e) {
+    console.error(e);
+    return null;
+  }
   if (result.hits.hits.length === 0 || result.hits.max_score < 15) {
     return null;
   } else {

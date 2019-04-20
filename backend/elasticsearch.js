@@ -8,7 +8,7 @@ var state = {
 exports.connect = function(config, done) {
   if (state.db) return done();
 
-  if (process.env.NODE_ENV == 'production') {
+  if (process.env.LAMBDA_TASK_ROOT) {
     config.connectionClass = httpAwsEs;
   }
   state.db = new Client(config);

@@ -16,8 +16,8 @@ var config = require('./config');
 var elasticsearch = require('./elasticsearch');
 elasticsearch.connect(config.elasticsearch, function(err) {
   if (err) {
-    console.log('Unable to connect to ES.')
-    process.exit(1)
+    console.log('Unable to connect to ES.');
+    process.exit(1);
   }
 })
 
@@ -50,7 +50,10 @@ var awsServerlessExpressMiddleware = require('aws-serverless-express/middleware'
 app.use(awsServerlessExpressMiddleware.eventContext());
 
 app.use(function(req, res, next) {
-  if (req.path.startsWith('/api/auth') || req.isAuthenticated()) {
+  if (req.path.startsWith('/api/auth')
+      || req.path.startsWith('/api/articles')
+      || req.path.startsWith('/api/cases')
+      || req.isAuthenticated()) {
     next();
   } else {
     next(createError(401));
