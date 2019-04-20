@@ -103,6 +103,11 @@ layers:
     package:
       exclude:
         - nodejs/node_modules/**/aws-sdk/**
+        - nodejs/node_modules/**/moment-timezone/builds/**
+        - nodejs/node_modules/**/moment/min/**
+        - nodejs/node_modules/elasticsearch/src/lib/apis/*_*.js
+      include:
+        - nodejs/node_modules/elasticsearch/src/lib/apis/6_4.js
 
 resources:
   Resources:
@@ -150,53 +155,16 @@ resources:
               ResponseParameters:
                 method.response.header.Content-Type: integration.response.header.Content-Type
           PassthroughBehavior: WHEN_NO_MATCH
-    RobotsResource:
+    ProxyResource:
       Type: AWS::ApiGateway::Resource
       Properties:
         ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
-        PathPart: robots.txt
-        RestApiId: !Ref ApiGatewayRestApi
-    RobotsProxyMethod:
-      Type: AWS::ApiGateway::Method
-      Properties:
-        ResourceId: !Ref RobotsResource
-        RestApiId: !Ref ApiGatewayRestApi
-        HttpMethod: GET
-        AuthorizationType: NONE
-        MethodResponses:
-          - StatusCode: 200
-            ResponseParameters:
-              method.response.header.Content-Type: true
-        Integration:
-          Type: AWS
-          Credentials: !GetAtt S3ReadRole.Arn
-          Uri: !Join
-            - ""
-            - - arn:aws:apigateway:${self:custom.region}:s3:path/
-              - !Ref S3BucketJournaltoolsstatic
-              - /robots.txt
-          IntegrationHttpMethod: GET
-          IntegrationResponses:
-            - StatusCode: 200
-              ResponseParameters:
-                method.response.header.Content-Type: integration.response.header.Content-Type
-          PassthroughBehavior: WHEN_NO_MATCH
-    ScriptsResource:
-      Type: AWS::ApiGateway::Resource
-      Properties:
-        ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
-        PathPart: javascripts
-        RestApiId: !Ref ApiGatewayRestApi
-    ScriptsProxyResource:
-      Type: AWS::ApiGateway::Resource
-      Properties:
-        ParentId: !Ref ScriptsResource
         PathPart: "{proxy+}"
         RestApiId: !Ref ApiGatewayRestApi
-    ScriptsProxyMethod:
+    ProxyMethod:
       Type: AWS::ApiGateway::Method
       Properties:
-        ResourceId: !Ref ScriptsProxyResource
+        ResourceId: !Ref ProxyResource
         RestApiId: !Ref ApiGatewayRestApi
         HttpMethod: GET
         AuthorizationType: NONE
@@ -213,7 +181,7 @@ resources:
             - ""
             - - arn:aws:apigateway:${self:custom.region}:s3:path/
               - !Ref S3BucketJournaltoolsstatic
-              - /javascripts/{key}
+              - /{key}
           RequestParameters:
             integration.request.path.key: method.request.path.proxy
           IntegrationHttpMethod: GET
