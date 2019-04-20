@@ -31,8 +31,10 @@ class JobCard extends Component {
       <Col md={6} lg={4}>
         <Card className="mt-3" style={{ height: 'calc(100% - 1rem)' }}>
           <Card.Body>
-            <Row className="justify-content-center">
-              <Card.Title>{ JOB_TYPES[this.props.job.command] } { this.props.job.fileName }</Card.Title>
+            <Row>
+              <Col className="text-center">
+                <Card.Title>{ JOB_TYPES[this.props.job.command] } { this.props.job.fileName }</Card.Title>
+              </Col>
             </Row>
             <Row className="justify-content-center mb-2">
               <Card.Subtitle>{ moment(this.props.job.startTime).calendar() }</Card.Subtitle>
