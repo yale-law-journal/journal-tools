@@ -109,7 +109,7 @@ resources:
     S3ReadRole:
       Type: AWS::IAM::Role
       Properties:
-        RoleName: ApigS3ReadOnly
+        RoleName: ApigS3ReadOnly-${self:custom.stage}
         ManagedPolicyArns:
           - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
         AssumeRolePolicyDocument:
