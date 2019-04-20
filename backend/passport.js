@@ -7,7 +7,7 @@ var db = require('./sql');
 var models = require('./models');
 var User = models.User;
 
-var config = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'config.json')))[process.env.NODE_ENV];
+var config = require('./config');
 
 try {
   passport.use(

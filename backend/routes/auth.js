@@ -5,9 +5,8 @@ var fs = require('fs');
 var createError = require('http-errors');
 var path = require('path');
 
+var config = require('../config');
 var passport = require('../passport');
-
-var config = JSON.parse(fs.readFileSync(path.resolve(__dirname, '..', 'config.json')))[process.env.NODE_ENV];
 
 router.get('/', function(req, res, next) {
   if (req.isAuthenticated()) {

@@ -10,7 +10,7 @@ var path = require('path');
 
 var app = express();
 
-var config = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'config.json')))[process.env.NODE_ENV];
+var config = require('./config');
 
 // Connect to ES on start
 var elasticsearch = require('./elasticsearch');

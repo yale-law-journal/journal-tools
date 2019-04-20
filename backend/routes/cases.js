@@ -5,9 +5,8 @@ var fs = require('fs');
 var path = require('path');
 var sanitize = require('sanitize-filename');
 
+var config = require('../config');
 var db = require('../elasticsearch');
-
-var config = JSON.parse(fs.readFileSync(path.resolve(__dirname, '..', 'config.json')))[process.env.NODE_ENV];
 
 /* GET pages from a reporter. */
 router.get('/:reporter/:volume/:startPage', function(req, res, next) {

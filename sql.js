@@ -8,7 +8,7 @@ var state = {
 }
 
 exports.connect = function(config) {
-  if (state.db) return done();
+  if (state.db) return;
 
   state.db = new Sequelize(config['database'], config['user'], config['password'], {
     host: config['host'],

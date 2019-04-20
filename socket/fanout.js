@@ -3,7 +3,7 @@ var fs = require('fs');
 var path = require('path');
 var { URL } = require('url');
 
-var config = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'config.json')))[process.env.NODE_ENV];
+var config = require('./config');
 
 var db = require('./sql');
 db.connect(config.postgres);
@@ -38,7 +38,7 @@ exports.handler = async (event, context) => {
   let connections = await Connection.findAll();
   let connectionIds = connections.map(c => c.connectionId);
   let connectionsApi = new ConnectionsApi(connectionIds);
-  for (message of messages) {
+  for (let message of messages) {
     console.log('Message:', message);
     let job = await Job.findByPk(message.job_id);
     if (!job) {

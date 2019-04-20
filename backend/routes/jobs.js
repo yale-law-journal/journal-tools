@@ -7,13 +7,10 @@ var fs = require('fs');
 var path = require('path');
 var uuid = require('uuid/v4');
 
+var config = require('../config');
 var db = require('../sql');
 var models = require('../models');
 var Job = models.Job;
-
-var config = JSON.parse(fs.readFileSync(path.resolve(__dirname, '..', 'config.json')))[process.env.NODE_ENV];
-
-AWS.config.update({ region: 'us-east-1' });
 
 let s3 = new AWS.S3();
 let sqs = new AWS.SQS();

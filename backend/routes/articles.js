@@ -5,12 +5,11 @@ var fs = require('fs');
 var path = require('path');
 var request = require('request-promise-native');
 
+var config = require('../config');
 var db = require('../elasticsearch');
 
 var abbreviationsText = fs.readFileSync(path.resolve(__dirname, '..', 'data', 'abbreviations.json'));
 var abbreviations = JSON.parse(abbreviationsText);
-
-var config = JSON.parse(fs.readFileSync(path.resolve(__dirname, '..', 'config.json')))[process.env.NODE_ENV];
 
 function expandJournal(journal) {
   let expanded = journal.replace(/\.(?=[A-Z])/g, '. ');

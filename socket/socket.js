@@ -2,7 +2,7 @@ var AWS = require('aws-sdk');
 var fs = require('fs');
 var path = require('path');
 
-var config = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'config.json')))[process.env.NODE_ENV];
+var config = require('./config');
 
 var db = require('./sql');
 db.connect(config.postgres);

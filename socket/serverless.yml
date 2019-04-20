@@ -7,7 +7,8 @@ provider:
   websocketApiRouteSelectionExpression: $request.body.action
 
   environment:
-    NODE_ENV: production
+    STAGE: ${self:custom.stage}
+    NODE_ENV: development
     PROGRESS_QUEUE_ARN: !GetAtt ProgressQueue.Arn
     CONNECTIONS_URL: !Join
       - ""
