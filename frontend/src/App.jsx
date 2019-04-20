@@ -36,21 +36,7 @@ class App extends Component {
     this.setState({ loading: false });
   }
 
-  async componentDidMount() {
-    let loginStatus = this.getLoginStatus();
-
-    let response = await fetch('api/jobs');
-    if (!response.ok) {
-      console.log('Failed to fetch job list.');
-      return;
-    }
-    let result = await response.json();
-    this.setState({
-      jobs: result.results,
-      progress: result.results.map(job => ({ progress: job.progress, total: job.total })),
-    });
-
-    let socketUrl = result.websocket_api;
+  initSocket(socketUrl) {
     this.socket = new WSP(socketUrl, {
         packMessage: data => JSON.stringify(data),
         unpackMessage: data => JSON.parse(data),
@@ -77,6 +63,24 @@ class App extends Component {
     this.socket.onError.addListener(err => {
       console.log(err);
     });
+  }
+
+  async componentDidMount() {
+    let loginStatus = this.getLoginStatus();
+
+    let response = await fetch('api/jobs');
+    if (!response.ok) {
+      console.log('Failed to fetch job list.');
+      return;
+    }
+    let result = await response.json();
+    this.setState({
+      jobs: result.results,
+      progress: result.results.map(job => ({ progress: job.progress, total: job.total })),
+    });
+
+    let socketUrl = result.websocket_api;
+    initSocket(socketUrl);
 
     await loginStatus;
   }
@@ -94,6 +98,9 @@ class App extends Component {
   }
 
   async createJob(action, formData) {
+    if (this.socket.isClosed || this.socket.isClosing) {
+      initSocket();
+    }
     let buffer = '';
     let response = await fetch(new URL(action, locationSlash()).toString(), {
       method: 'POST',
