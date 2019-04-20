@@ -9,16 +9,16 @@ provider:
   runtime: nodejs8.10
 
   environment:
-    NODE_ENV: production
-    ROOT_URL:
-      Fn::Join:
-        - ""
-        - - https://
-          - !Ref ApiGatewayRestApi
-          - .execute-api.${self:custom.region}.amazonaws.com
-          - /${self:custom.stage}
+    NODE_ENV: development
+    ROOT_URL: !Join
+      - ""
+      - - https://
+        - !Ref ApiGatewayRestApi
+        - .execute-api.${self:custom.region}.amazonaws.com
+        - /${self:custom.stage}
     PROGRESS_QUEUE_ARN: !ImportValue ProgressQueueArn-${self:custom.stage}
     SOCKET_URL: !ImportValue SocketUrl-${self:custom.stage}
+    UPLOADS_BUCKET: !ImportValue S3Uploads-${self:custom.stage}
 
   iamRoleStatements:
     - Effect: Allow
@@ -42,8 +42,15 @@ provider:
         - s3:AbortMultipartUpload
         - s3:DeleteObject
       Resource:
-        - arn:aws:s3:::${file(config.json):production.s3_uploads}
-        - arn:aws:s3:::${file(config.json):production.s3_uploads}/*
+        - Fn::Join:
+          - ""
+          - - "arn:aws:s3:::"
+            - !ImportValue S3Uploads-${self:custom.stage}
+        - Fn::Join:
+          - ""
+          - - "arn:aws:s3:::"
+            - !ImportValue S3Uploads-${self:custom.stage}
+            - /*
     - Effect: Allow
       Action:
         - lambda:CreateEventSourceMapping
@@ -109,6 +116,10 @@ resources:
                   - apigateway.amazonaws.com
               Action:
                 - sts:AssumeRole
+    S3BucketJournaltoolsstatic:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: journal-tools-static-${self:custom.stage}
     IndexProxyMethod:
       Type: AWS::ApiGateway::Method
       Properties:
@@ -123,7 +134,11 @@ resources:
         Integration:
           Type: AWS
           Credentials: !GetAtt S3ReadRole.Arn
-          Uri: arn:aws:apigateway:${self:provider.region}:s3:path/pdfapi-static/index.html
+          Uri: !Join
+            - ""
+            - - arn:aws:apigateway:${self:custom.region}:s3:path/
+              - !Ref S3BucketJournaltoolsstatic
+              - /index.html
           IntegrationHttpMethod: GET
           IntegrationResponses:
             - StatusCode: 200
@@ -158,7 +173,11 @@ resources:
         Integration:
           Type: AWS
           Credentials: !GetAtt S3ReadRole.Arn
-          Uri: arn:aws:apigateway:${self:custom.region}:s3:path/${file(config.json):production.s3_static}/javascripts/{key}
+          Uri: !Join
+            - ""
+            - - arn:aws:apigateway:${self:custom.region}:s3:path/
+              - !Ref S3BucketJournaltoolsstatic
+              - /javascripts/{key}
           RequestParameters:
             integration.request.path.key: method.request.path.proxy
           IntegrationHttpMethod: GET

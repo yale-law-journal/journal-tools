@@ -9,30 +9,28 @@ provider:
   environment:
     NODE_ENV: production
     PROGRESS_QUEUE_ARN: !GetAtt ProgressQueue.Arn
-    CONNECTIONS_URL:
-      Fn::Join:
-        - ""
-        - - https://
-          - !Ref WebsocketsApi
-          - .execute-api.${self:custom.region}.amazonaws.com
-          - /${self:custom.stage}/@connections
+    CONNECTIONS_URL: !Join
+      - ""
+      - - https://
+        - !Ref WebsocketsApi
+        - .execute-api.${self:custom.region}.amazonaws.com
+        - /${self:custom.stage}/@connections
 
   iamRoleStatements:
     - Effect: Allow
       Action:
         - execute-api:ManageConnections
-      Resource:
-        Fn::Join:
-          - ":"
-          - - arn
-            - aws
-            - execute-api
-            - ${self:custom.region}
-            - !Ref 'AWS::AccountId'
-            - Fn::Join:
-                - /
-                - - !Ref WebsocketsApi
-                  - "*"
+      Resource: !Join
+        - ":"
+        - - arn
+          - aws
+          - execute-api
+          - ${self:custom.region}
+          - !Ref 'AWS::AccountId'
+          - !Join
+            - /
+            - - !Ref WebsocketsApi
+              - "*"
 
   iamManagedPolicies:
     - arn:aws:iam::aws:policy/AmazonRDSDataFullAccess
@@ -40,7 +38,6 @@ provider:
 
 package:
   exclude:
-    # - node_modules/**/aws-sdk/**
     - node_modules/**
 
 plugins:
@@ -76,7 +73,7 @@ resources:
     ProgressQueue:
       Type: AWS::SQS::Queue
       Properties:
-        QueueName: journal-tools-progress
+        QueueName: journal-tools-progress-${self:custom.stage}
         MessageRetentionPeriod: 300
         ReceiveMessageWaitTimeSeconds: 20
   Outputs:

@@ -77,7 +77,7 @@ router.post('/:command', function(req, res, next) {
     let queueUrl = queueData.QueueUrl;
     await s3.putObject({
       Body: fs.createReadStream(file.path),
-      Bucket: config.s3_uploads,
+      Bucket: process.env.UPLOADS_BUCKET,
       Key: `${command}/${fileUuid}`,
       ContentEncoding: file.encoding,
       ContentType: file.mimetype,
