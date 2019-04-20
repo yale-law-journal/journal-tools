@@ -36,8 +36,8 @@ class App extends Component {
     this.setState({ loading: false });
   }
 
-  initSocket(socketUrl) {
-    this.socket = new WSP(socketUrl, {
+  initSocket() {
+    this.socket = new WSP(this.socketUrl, {
         packMessage: data => JSON.stringify(data),
         unpackMessage: data => JSON.parse(data),
     });
@@ -79,8 +79,8 @@ class App extends Component {
       progress: result.results.map(job => ({ progress: job.progress, total: job.total })),
     });
 
-    let socketUrl = result.websocket_api;
-    initSocket(socketUrl);
+    this.socketUrl = result.websocket_api;
+    this.initSocket();
 
     await loginStatus;
   }
@@ -99,7 +99,7 @@ class App extends Component {
 
   async createJob(action, formData) {
     if (this.socket.isClosed || this.socket.isClosing) {
-      initSocket();
+      this.initSocket();
     }
     let buffer = '';
     let response = await fetch(new URL(action, locationSlash()).toString(), {
