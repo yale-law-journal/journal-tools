@@ -150,6 +150,37 @@ resources:
               ResponseParameters:
                 method.response.header.Content-Type: integration.response.header.Content-Type
           PassthroughBehavior: WHEN_NO_MATCH
+    RobotsResource:
+      Type: AWS::ApiGateway::Resource
+      Properties:
+        ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+        PathPart: robots.txt
+        RestApiId: !Ref ApiGatewayRestApi
+    RobotsProxyMethod:
+      Type: AWS::ApiGateway::Method
+      Properties:
+        ResourceId: !Ref RobotsResource
+        RestApiId: !Ref ApiGatewayRestApi
+        HttpMethod: GET
+        AuthorizationType: NONE
+        MethodResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Content-Type: true
+        Integration:
+          Type: AWS
+          Credentials: !GetAtt S3ReadRole.Arn
+          Uri: !Join
+            - ""
+            - - arn:aws:apigateway:${self:custom.region}:s3:path/
+              - !Ref S3BucketJournaltoolsstatic
+              - /robots.txt
+          IntegrationHttpMethod: GET
+          IntegrationResponses:
+            - StatusCode: 200
+              ResponseParameters:
+                method.response.header.Content-Type: integration.response.header.Content-Type
+          PassthroughBehavior: WHEN_NO_MATCH
     ScriptsResource:
       Type: AWS::ApiGateway::Resource
       Properties:
