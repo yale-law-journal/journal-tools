@@ -1,4 +1,5 @@
 const path = require('path');
+const webpack = require('webpack');
 
 const config = {
   context: path.resolve(__dirname, 'src'),
@@ -44,6 +45,12 @@ const config = {
     'react-dom': 'ReactDOM',
   },
   devtool: 'source-map',
+  plugins: [
+    new webpack.IgnorePlugin({
+      resourceRegExp: /^\.\/locale$/,
+      contextRegExp: /moment$/
+    }),
+  ],
 };
 
 module.exports = config;
