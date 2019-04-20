@@ -35,15 +35,10 @@
     "passport-google-oauth20": "^2.0.0",
     "pg": "^7.9.0",
     "pg-hstore": "^2.3.2",
-    "react": "^16.8.6",
-    "react-bootstrap": "^1.0.0-beta.6",
-    "react-dom": "^16.8.6",
     "request": "^2.88.0",
     "request-promise-native": "^1.0.7",
     "sanitize-filename": "^1.6.1",
     "sequelize": "^5.7.0",
-    "serverless": "^1.41.0",
-    "serverless-plugin-include-dependencies": "^3.2.1",
     "uuid": "^3.3.2",
     "yaml": "^1.5.0"
   },
@@ -51,6 +46,8 @@
     "aws-sdk": "^2.432.0"
   },
   "devDependencies": {
+    "serverless": "^1.41.0",
+    "serverless-plugin-include-dependencies": "^3.2.1",
     "serverless-apigw-binary": "^0.4.4"
   }
 }
