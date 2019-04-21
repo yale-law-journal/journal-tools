@@ -16,11 +16,11 @@ class LoginModal extends Component {
       console.log('Error:', error);
       this.setState({ error: error });
     }
-    window.history.replaceState('', '', '#');
+    window.history.replaceState('', document.title, window.location.pathname);
   }
 
   render() {
-    let maybeAlert = this.state.error ? <Alert dismissible variant="warning">{ this.state.error }</Alert> : null;
+    let maybeAlert = this.state.error ? <Alert variant="warning">{ this.state.error }</Alert> : null;
     return (
       <Modal show={this.props.show}>
         <Modal.Header>
