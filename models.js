@@ -4,6 +4,7 @@ class Job extends Sequelize.Model {}
 class Connection extends Sequelize.Model {}
 class User extends Sequelize.Model {}
 class Organization extends Sequelize.Model {}
+class OrganizationUser extends Sequelize.Model {}
 
 function sync(sequelize) {
   Job.init({
@@ -26,11 +27,10 @@ function sync(sequelize) {
   }, { sequelize });
 
   User.init({
-    id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
+    email: { type: Sequelize.STRING, primaryKey: true },
     name: Sequelize.STRING,
-    email: Sequelize.STRING,
     googleId: Sequelize.STRING,
-    admin: Sequelize.BOOLEAN,
+    siteAdmin: { type: Sequelize.BOOLEAN, defaultValue: false },
   }, { sequelize });
 
   User.hasMany(Job);
@@ -38,12 +38,16 @@ function sync(sequelize) {
   Organization.init({
     id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
     name: Sequelize.STRING,
-    authorizedEmails: Sequelize.ARRAY(Sequelize.STRING),
     permaApiKey: Sequelize.STRING,
     permaFolder: Sequelize.STRING,
   }, { sequelize });
 
-  Organization.hasMany(User);
+  OrganizationUser.init({
+    admin: { type: Sequelize.BOOLEAN, defaultValue: false },
+  }, { sequelize });
+
+  User.belongsToMany(Organization, { through: OrganizationUser });
+  Organization.belongsToMany(User, { through: OrganizationUser });
 
   return sequelize.sync();
 }

@@ -19,25 +19,24 @@ try {
     function(accessToken, refreshToken, profile, done) {
       console.log('Profile:', profile);
       db.ready().then(() => {
-        try {
-          console.log('Creating user.');
-          return User.findOrCreate({
-            where: {
-              googleId: profile.id,
-            },
-            defaults: {
-              name: profile.displayName,
-              email: profile.emails[0].value,
-            }
+        return User.findByPk(profile.emails[0].value);
+      }).then(user => {
+        if (user) {
+          user.update({
+            googleId: profile.id,
+            name: profile.displayName,
           });
-        } catch (e) { console.log('Failed to create user:', e); done(e, null); return; }
-      }).then(result => { console.log(result); return done(null, result ? result[0] : false); }, err => { console.log(err); return done(err, null) });
+          return done(null, user);
+        } else {
+          return done(null, false, { message: 'User authorization not found. (have you sent in your Google account?).' });
+        }
+      }, err => { console.log(err); return done(err, null) });
     }
   ));
 
-  passport.serializeUser((user, done) => done(null, user.id));
-  passport.deserializeUser((id, done) =>
-    User.findByPk(id).then(result => done(null, result), err => done(err, null))
+  passport.serializeUser((user, done) => done(null, user.email));
+  passport.deserializeUser((email, done) =>
+    User.findByPk(email).then(result => done(null, result), err => done(err, null))
   );
 } catch (e) { console.log(e); }
 

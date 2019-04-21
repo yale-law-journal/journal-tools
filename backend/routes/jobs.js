@@ -20,9 +20,7 @@ let lambda = new AWS.Lambda();
 router.get('/', async function(req, res) {
   let ready = await db.ready();
   let jobs = await Job.findAll({
-    where: {
-      UserId: req.user.id
-    }
+    where: { UserEmail: req.user.email }
   });
   res.json({ results: jobs, websocket_api: process.env.SOCKET_URL });
 });

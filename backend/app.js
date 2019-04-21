@@ -60,17 +60,11 @@ app.use(function(req, res, next) {
   }
 });
 
-// var indexRouter = require('./routes/index');
-var casesRouter = require('./routes/cases');
-var articlesRouter = require('./routes/articles');
-var jobsRouter = require('./routes/jobs');
-var authRouter = require('./routes/auth');
-
-// app.use('/', indexRouter);
-app.use('/api/cases', casesRouter);
-app.use('/api/articles', articlesRouter);
-app.use('/api/jobs', jobsRouter);
-app.use('/api/auth', authRouter);
+let routes = ['cases', 'articles', 'jobs', 'auth', 'organizations'];
+for (let route of routes) {
+  let router = require(`./routes/${route}`);
+  app.use(`/api/${route}`, router);
+}
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
