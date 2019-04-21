@@ -33,8 +33,6 @@ function sync(sequelize) {
     siteAdmin: { type: Sequelize.BOOLEAN, defaultValue: false },
   }, { sequelize });
 
-  User.hasMany(Job);
-
   Organization.init({
     id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
     name: Sequelize.STRING,
@@ -48,6 +46,9 @@ function sync(sequelize) {
 
   User.belongsToMany(Organization, { through: OrganizationUser });
   Organization.belongsToMany(User, { through: OrganizationUser });
+
+  Organization.hasMany(Job);
+  User.hasMany(Job);
 
   return sequelize.sync();
 }

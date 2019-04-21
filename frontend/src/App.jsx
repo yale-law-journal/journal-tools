@@ -11,6 +11,7 @@ import Row from 'react-bootstrap/Row';
 
 import FileInputCard from './components/FileInputCard';
 import JobCard from './components/JobCard';
+import LoginForm from './components/LoginForm';
 import LoginModal from './components/LoginModal';
 
 var decoder = new TextDecoder('utf-8');
@@ -23,7 +24,13 @@ function locationSlash() {
 class App extends Component {
   constructor(props) {
     super(props);
-    this.state = { jobs: {}, progress: {}, loginInfo: null, loading: true };
+    this.state = {
+      jobs: {},
+      progress: {},
+      loginInfo: null,
+      loading: true,
+      organization: null,
+    };
     this.createJob = this.createJob.bind(this);
     this.socket = null;
   }
@@ -31,7 +38,12 @@ class App extends Component {
   async getLoginStatus() {
     let response = await fetch('api/auth');
     if (response.ok) {
-      this.setState({ loginInfo: await response.json() });
+      let info = await response.json();
+      this.setState({
+        loginInfo: info,
+        organization: localStorage.getItem('organization')
+          || (info.organizations ? info.organizations[0].id : null),
+      });
     }
     this.setState({ loading: false });
   }
@@ -101,6 +113,9 @@ class App extends Component {
     if (this.socket.isClosed || this.socket.isClosing) {
       this.initSocket();
     }
+
+    formData.append('organization', this.state.organization);
+
     let buffer = '';
     let response = await fetch(new URL(action, locationSlash()).toString(), {
       method: 'POST',
@@ -114,17 +129,35 @@ class App extends Component {
     this.update(job.id, () => job, () => ({ progress: 0, total: 1 }));
   }
 
+  setOrganization = (organization) => {
+    localStorage.setItem('organization', organization);
+    this.setState({ organization });
+  }
+
+  handleLogout = () => {
+    this.setState({ loginInfo: false });
+  }
+
   render() {
     let compare = (a, b) => b.id - a.id;
-    let jobCards = Object.values(this.state.jobs).slice().sort(compare).map(job =>
+    let jobs = Object.values(this.state.jobs);
+    let orgJobs = jobs.filter(job => job.OrganizationId == this.state.organization);
+    let jobCards = orgJobs.slice().sort(compare).map(job =>
       <JobCard job={job} progress={this.state.progress[job.id]} key={job.id} />
     );
     let loginInfo = this.state.loginInfo ? `Signed in as ${this.state.loginInfo.name}` : 'Signed out';
     return <>
       <LoginModal show={!this.state.loading && !Boolean(this.state.loginInfo)} />
-      <Navbar bg="dark" variant="dark" className="justify-content-between">
+      <Navbar bg="dark" variant="dark" expand="sm">
         <Navbar.Brand>Journal Tools</Navbar.Brand>
-        <Navbar.Text>{ loginInfo }</Navbar.Text>
+        <Navbar.Toggle />
+        <Navbar.Collapse className="justify-content-end">
+          <LoginForm
+            loginInfo={this.state.loginInfo}
+            organization={this.state.organization}
+            onOrgChange={this.setOrganization}
+            onLogout={this.handleLogout} />
+        </Navbar.Collapse>
       </Navbar>
       <Container className="pt-2 justify-content-center">
         <Row className="justify-content-center">

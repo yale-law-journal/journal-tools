@@ -11,6 +11,7 @@ var config = require('../config');
 var db = require('../sql');
 var models = require('../models');
 var Job = models.Job;
+var Organization = models.Organization;
 
 let s3 = new AWS.S3();
 let sqs = new AWS.SQS();
@@ -64,8 +65,13 @@ router.post('/:command', function(req, res, next) {
     completed: false,
     startTime: Date.now(),
     s3uuid: fileUuid,
-    UserId: req.user.id,
+    UserEmail: req.user.email,
   });
+
+  let org = null;
+  try {
+    org = await Organization.findByPk(req.fields.organization);
+  } catch (e) { console.error(e); }
 
   try {
     let queueData = await queueUrlPromise;
@@ -83,6 +89,8 @@ router.post('/:command', function(req, res, next) {
         'uuid': fileUuid,
         'queue-url': queueUrl,
         'pullers': encodeURI(req.fields.pullers),
+        'perma-api': org ? org.permaApiKey : undefined,
+        'perma-folder': org ? org.permaFolder : undefined,
       },
     }).promise();
 
