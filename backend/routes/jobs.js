@@ -39,11 +39,22 @@ router.post('/:command', function(req, res, next) {
   let command = req.params['command'];
   let file = req.files.doc;
 
-  if (!['pull', 'perma'].includes(command) || !file) {
+  if (!['pull', 'perma'].includes(command) || !file || !req.fields.organization) {
     res.sendStatus(400);
     return;
   }
   console.log('Fields:', req.fields);
+
+  let org = null;
+  try {
+    org = await Organization.findByPk(req.fields.organization);
+    if (!org) {
+      res.sendStatus(400);
+      return;
+    }
+  } catch (e) {
+    console.error(e);
+  }
 
   let arn = process.env.PROGRESS_QUEUE_ARN;
   let components = arn.split(':');
@@ -66,12 +77,8 @@ router.post('/:command', function(req, res, next) {
     startTime: Date.now(),
     s3uuid: fileUuid,
     UserEmail: req.user.email,
+    OrganizationId: req.fields.organization,
   });
-
-  let org = null;
-  try {
-    org = await Organization.findByPk(req.fields.organization);
-  } catch (e) { console.error(e); }
 
   try {
     let queueData = await queueUrlPromise;
@@ -89,8 +96,8 @@ router.post('/:command', function(req, res, next) {
         'uuid': fileUuid,
         'queue-url': queueUrl,
         'pullers': encodeURI(req.fields.pullers),
-        'perma-api': org ? org.permaApiKey : undefined,
-        'perma-folder': org ? org.permaFolder : undefined,
+        'perma-api': org.permaApiKey || undefined,
+        'perma-folder': org.permaFolder || undefined,
       },
     }).promise();
 

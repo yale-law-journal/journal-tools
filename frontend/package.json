@@ -15,16 +15,17 @@
     "@babel/preset-react": "^7.0.0",
     "babel-loader": "^8.0.5",
     "moment": "^2.24.0",
+    "ra-data-simple-rest": "^2.8.6",
     "react": "^16.8.6",
+    "react-admin": "^2.8.6",
     "react-bootstrap": "^1.0.0-beta.6",
     "react-dom": "^16.8.6",
     "terser-webpack-plugin": "^1.2.3",
     "webpack": "^4.29.6",
     "webpack-cli": "^3.3.0",
+    "webpack-dev-server": "^3.3.1",
     "webpack-merge": "^4.2.1",
     "websocket-as-promised": "^0.9.0"
   },
-  "dependencies": {
-    "query-string": "^6.4.2"
-  }
+  "dependencies": {}
 }

@@ -38,7 +38,7 @@ function sync(sequelize) {
     name: Sequelize.STRING,
     permaApiKey: Sequelize.STRING,
     permaFolder: Sequelize.STRING,
-  }, { sequelize });
+  }, { sequelize, paranoid: true });
 
   OrganizationUser.init({
     admin: { type: Sequelize.BOOLEAN, defaultValue: false },

@@ -4,10 +4,8 @@ const webpack = require('webpack');
 const config = {
   context: path.resolve(__dirname, 'src'),
   entry: {
-    index: [
-      // '@babel/polyfill',
-      './index.jsx',
-    ]
+    index: [ './index.jsx' ],
+    admin: [ './admin.jsx' ],
   },
   output: {
     path: path.resolve(__dirname, 'public', 'javascripts'),
