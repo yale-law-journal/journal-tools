@@ -1,7 +1,8 @@
 import React, { Component } from 'react';
 
 import restProvider from 'ra-data-simple-rest';
-import { Admin, Resource, List, Datagrid, Edit, Create, SimpleForm, DateField, TextField, ArrayField, SingleFieldList, DisabledInput, TextInput, ArrayInput, SimpleFormIterator } from 'react-admin';
+import { Admin, Resource, List, Datagrid, DateField, TextField, UrlField, ReferenceField, BooleanField, ArrayField, SingleFieldList,
+  Edit, Create, SimpleForm, DisabledInput, TextInput, ArrayInput, SimpleFormIterator } from 'react-admin';
 
 const OrganizationList = (props) => (
   <List {...props}>
@@ -64,13 +65,51 @@ const OrganizationEdit = (props) => (
   </Edit>
 );
 
-const AdminPanel = (props) => (
-  <Admin dataProvider={restProvider('api')}>
-    <Resource name="organizations"
-      list={OrganizationList}
-      create={OrganizationCreate}
-      edit={OrganizationEdit} />
-  </Admin>
+const JobList = (props) => (
+  <List {...props}>
+    <Datagrid>
+      <TextField source="UserEmail" />
+      <ReferenceField source="OrganizationId" reference="organizations">
+        <TextField source="name" />
+      </ReferenceField>
+      <TextField source="command" />
+      <TextField source="fileName" />
+      <BooleanField source="completed" />
+      <UrlField source="resultUrl" />
+    </Datagrid>
+  </List>
 );
+
+class AdminPanel extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { siteAdmin: false };
+  }
+
+  async componentWillMount() {
+    let authResponse = await fetch('api/auth');
+    let auth = await authResponse.json();
+    if (auth.siteAdmin) {
+      this.setState({ siteAdmin: true });
+    }
+  }
+
+  render() {
+    let resources = [(
+      <Resource key={0} name="organizations"
+        list={OrganizationList}
+        create={this.state.siteAdmin ? OrganizationCreate : undefined}
+        edit={OrganizationEdit} />
+    )];
+    if (this.state.siteAdmin) {
+      resources.push(<Resource key={1} name="jobs/all" options={{ label: 'Jobs' }} list={JobList} />);
+    }
+    return (
+      <Admin dataProvider={restProvider('api')}>
+        { resources }
+      </Admin>
+    );
+  }
+}
 
 export default AdminPanel;

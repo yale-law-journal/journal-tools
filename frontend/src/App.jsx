@@ -79,6 +79,7 @@ class App extends Component {
 
   async componentDidMount() {
     let loginStatus = this.getLoginStatus();
+    let socketUrl = fetch('api/socket').then(response => response.json()).then(result => result.socketUrl);
 
     let response = await fetch('api/jobs');
     if (!response.ok) {
@@ -91,7 +92,7 @@ class App extends Component {
       progress: result.results.map(job => ({ progress: job.progress, total: job.total })),
     });
 
-    this.socketUrl = result.websocket_api;
+    this.socketUrl = await socketUrl;
     this.initSocket();
 
     await loginStatus;

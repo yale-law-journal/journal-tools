@@ -60,7 +60,7 @@ app.use(function(req, res, next) {
   }
 });
 
-let routes = ['cases', 'articles', 'jobs', 'auth', 'organizations'];
+let routes = ['cases', 'articles', 'jobs', 'auth', 'organizations', 'socket'];
 for (let route of routes) {
   let router = require(`./routes/${route}`);
   app.use(`/api/${route}`, router);

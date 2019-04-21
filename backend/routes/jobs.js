@@ -4,7 +4,7 @@ var router = express.Router();
 var AWS = require('aws-sdk');
 var formidable = require('formidable');
 var fs = require('fs');
-var path = require('path');
+var createError = require('http-errors');
 var uuid = require('uuid/v4');
 
 var config = require('../config');
@@ -23,7 +23,26 @@ router.get('/', async function(req, res) {
   let jobs = await Job.findAll({
     where: { UserEmail: req.user.email }
   });
-  res.json({ results: jobs, websocket_api: process.env.SOCKET_URL });
+  res.json({ results: jobs });
+});
+
+function requireSiteAdmin(req, res, next) {
+  if (!req.user.siteAdmin) {
+    return next(createError(401));
+  } else {
+    return next();
+  }
+}
+
+function contentRangeAll(res, name, data) {
+}
+
+router.get('/all', requireSiteAdmin, async function(req, res, next) {
+  let jobs = await Job.findAll();
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Range');
+  res.setHeader('Content-Range', `jobs/all 0-${jobs.length}/${jobs.length}`);
+  console.log(res.getHeaders());
+  res.json(jobs);
 });
 
 router.post('/:command', function(req, res, next) {

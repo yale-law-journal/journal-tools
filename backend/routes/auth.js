@@ -15,6 +15,7 @@ router.get('/', async function(req, res, next) {
     res.json({
       name: req.user.name,
       email: req.user.email,
+      siteAdmin: req.user.siteAdmin ? true : undefined,
       organizations: orgs.map(org => ({
         id: org.id,
         name: org.name,
