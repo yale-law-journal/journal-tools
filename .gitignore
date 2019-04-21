@@ -9,6 +9,7 @@ jspm_packages
 .serverless
 
 config.json
+secrets.yml
 /venv
 /backend/data/abbreviations.tsv
 /backend/data/us
