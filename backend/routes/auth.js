@@ -35,7 +35,7 @@ router.get('/google', passport.authenticate('google', {
 }));
 
 router.get('/google/callback', passport.authenticate('google', {
-  failureRedirect: '/',
+  failureRedirect: '/#error=Unrecognized email address. Make sure your organization admin has added you.',
   successRedirect: '/',
 }));
 
