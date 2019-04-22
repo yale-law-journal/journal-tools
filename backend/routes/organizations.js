@@ -43,7 +43,7 @@ router.use(function (req, res, next) {
 
 router.get('/', async function(req, res, next) {
   // All organizations you're a member of.
-  let orgs = await (req.user.siteAdmin ? req.user.getOrganizations() : Organization.findAll());
+  let orgs = await (req.user.siteAdmin ? Organization.findAll() : req.user.getOrganizations());
   let allUsers = await Promise.all(orgs.map(org => org.getUsers()));
   console.log('Setting header.');
   contentRangeAll(res, 'organizations', orgs);
@@ -90,11 +90,16 @@ router.post('/', jsonParser, async function(req, res, next) {
 
 async function requireOrganizationAdmin(req, res, next) {
   let orgId = parseInt(req.params.organization);
-  let orgs = await req.user.getOrganizations({
-    where: { id: orgId },
-  });
-  if (!orgs) { return next(createError(404)); }
-  if (!orgs[0].OrganizationUser.admin) { return next(createError(401)); }
+  let orgs;
+  if (req.user.siteAdmin) {
+    orgs = [await Organization.findByPk(orgId)];
+  } else {
+    orgs = await req.user.getOrganizations({
+      where: { id: orgId },
+    });
+  }
+  if (orgs.length == 0) { return next(createError(404)); }
+  if (!req.user.siteAdmin && !orgs[0].OrganizationUser.admin) { return next(createError(401)); }
 
   req.organization = orgs[0];
   return next();
@@ -106,14 +111,17 @@ router.get('/:organization(\\d+)', requireOrganizationAdmin, async function(req,
 });
 
 router.put('/:organization(\\d+)', requireOrganizationAdmin, jsonParser, async function(req, res, next) {
+  let oldData = req.organization.toJSON();
   await req.organization.update({
     name: req.body.name,
     permaApiKey: req.body.permaApiKey,
     permaFolder: req.body.permaFolder,
   });
+  await Promise.all(req.body.users.map(u => User.findOrCreate({ where: { email: u.email } })));
   await req.organization.setUsers(req.body.users.map(u => u.email), { through: { admin: false } });
-  await req.organization.setUsers(req.body.admins.map(u => u.email), { through: { admin: true } });
-  res.json({ success: true });
+  await Promise.all(req.body.admins.map(u => User.findOrCreate({ where: { email: u.email } })));
+  await req.organization.addUsers(req.body.admins.map(u => u.email), { through: { admin: true } });
+  res.json({ id: req.organization.id, data: req.organization, oldData });
 });
 
 router.delete('/:organization(\\d+)', requireOrganizationAdmin, async function(req, res, next) {
