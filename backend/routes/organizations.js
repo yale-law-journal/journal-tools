@@ -43,8 +43,6 @@ router.use(function (req, res, next) {
 
 router.get('/', async function(req, res, next) {
   // All organizations you're a member of.
-  await db.ready();
-
   let orgs = await (req.user.siteAdmin ? req.user.getOrganizations() : Organization.findAll());
   let allUsers = await Promise.all(orgs.map(org => org.getUsers()));
   console.log('Setting header.');
@@ -56,8 +54,6 @@ router.post('/', jsonParser, async function(req, res, next) {
   console.log('Body:', req.body);
   if (!req.user.siteAdmin) { return next(createError(401)); }
   if (!req.body.name) { return next(createError(400)); }
-
-  await db.ready();
 
   let [org, created] = await Organization.findOrCreate({
     where: {
@@ -93,14 +89,7 @@ router.post('/', jsonParser, async function(req, res, next) {
 });
 
 async function requireOrganizationAdmin(req, res, next) {
-  await db.ready();
-
-  let orgIdStr = req.params.organization;
-  if (!orgIdStr.match(/^[0-9]+$/)) {
-    console.error('Bad Organization ID.');
-    return next(createError(400));
-  }
-  let orgId = parseInt(orgIdStr);
+  let orgId = parseInt(req.params.organization);
   let orgs = await req.user.getOrganizations({
     where: { id: orgId },
   });
@@ -111,12 +100,12 @@ async function requireOrganizationAdmin(req, res, next) {
   return next();
 }
 
-router.get('/:organization', requireOrganizationAdmin, async function(req, res, next) {
+router.get('/:organization(\\d+)', requireOrganizationAdmin, async function(req, res, next) {
   let users = await req.organization.getUsers();
   res.json(formatOrganization(req.organization, users));
 });
 
-router.put('/:organization', requireOrganizationAdmin, jsonParser, async function(req, res, next) {
+router.put('/:organization(\\d+)', requireOrganizationAdmin, jsonParser, async function(req, res, next) {
   await req.organization.update({
     name: req.body.name,
     permaApiKey: req.body.permaApiKey,
@@ -127,25 +116,25 @@ router.put('/:organization', requireOrganizationAdmin, jsonParser, async functio
   res.json({ success: true });
 });
 
-router.delete('/:organization', requireOrganizationAdmin, async function(req, res, next) {
+router.delete('/:organization(\\d+)', requireOrganizationAdmin, async function(req, res, next) {
   await req.organization.destroy();
   res.json({ success: true });
 });
 
-router.get('/:organization/users', requireOrganizationAdmin, async function(req, res, next) {
+router.get('/:organization(\\d+)/users', requireOrganizationAdmin, async function(req, res, next) {
   let users = await req.organization.getUsers();
   contentRangeAll(res, 'users', users);
   res.json(users);
 });
 
-router.get('/:organization/admins', requireOrganizationAdmin, async function(req, res, next) {
+router.get('/:organization(\\d+)/admins', requireOrganizationAdmin, async function(req, res, next) {
   let users = await req.organization.getUsers();
   let admins = users.filter(u => u.OrganizationUser.admin);
   contentRangeAll(res, 'admins', admins);
   res.json(admins);
 });
 
-router.post('/:organization/users', jsonParser, requireOrganizationAdmin, async function(req, res, next) {
+router.post('/:organization(\\d+)/users', jsonParser, requireOrganizationAdmin, async function(req, res, next) {
   if (!req.body || !req.body.users || !req.body.users.every(isString)) {
     return next(createError(400));
   }
@@ -155,7 +144,7 @@ router.post('/:organization/users', jsonParser, requireOrganizationAdmin, async 
   res.json({ success: true });
 });
 
-router.post('/:organization/admins', jsonParser, requireOrganizationAdmin, async function(req, res, next) {
+router.post('/:organization(\\d+)/admins', jsonParser, requireOrganizationAdmin, async function(req, res, next) {
   if (!req.body || !req.body.users || !req.body.users.every(isString)) {
     return next(createError(400));
   }

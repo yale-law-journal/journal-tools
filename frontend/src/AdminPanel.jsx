@@ -102,7 +102,7 @@ class AdminPanel extends Component {
         edit={OrganizationEdit} />
     )];
     if (this.state.siteAdmin) {
-      resources.push(<Resource key={1} name="jobs/all" options={{ label: 'Jobs' }} list={JobList} />);
+      resources.push(<Resource key={1} name="jobs" list={JobList} />);
     }
     return (
       <Admin dataProvider={restProvider('api')}>

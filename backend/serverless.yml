@@ -151,6 +151,37 @@ resources:
               ResponseParameters:
                 method.response.header.Content-Type: integration.response.header.Content-Type
           PassthroughBehavior: WHEN_NO_MATCH
+    AdminResource:
+      Type: AWS::ApiGateway::Resource
+      Properties:
+        ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+        PathPart: "admin"
+        RestApiId: !Ref ApiGatewayRestApi
+    AdminProxyMethod:
+      Type: AWS::ApiGateway::Method
+      Properties:
+        ResourceId: !GetAtt ApiGatewayRestApi.RootResourceId
+        RestApiId: !Ref ApiGatewayRestApi
+        HttpMethod: GET
+        AuthorizationType: NONE
+        MethodResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Content-Type: true
+        Integration:
+          Type: AWS
+          Credentials: !GetAtt S3ReadRole.Arn
+          Uri: !Join
+            - ""
+            - - arn:aws:apigateway:${self:custom.region}:s3:path/
+              - !Ref S3BucketJournaltoolsstatic
+              - /admin.html
+          IntegrationHttpMethod: GET
+          IntegrationResponses:
+            - StatusCode: 200
+              ResponseParameters:
+                method.response.header.Content-Type: integration.response.header.Content-Type
+          PassthroughBehavior: WHEN_NO_MATCH
     ProxyResource:
       Type: AWS::ApiGateway::Resource
       Properties:

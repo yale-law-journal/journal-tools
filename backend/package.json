@@ -25,6 +25,7 @@
     "debug": "~2.6.9",
     "elasticsearch": "^15.4.1",
     "express": "~4.16.0",
+    "express-promise-router": "^3.0.3",
     "express-session": "^1.16.1",
     "formidable": "^1.2.1",
     "http-aws-es": "^6.0.0",

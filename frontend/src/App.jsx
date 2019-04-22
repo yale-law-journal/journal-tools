@@ -81,7 +81,7 @@ class App extends Component {
     let loginStatus = this.getLoginStatus();
     let socketUrl = fetch('api/socket').then(response => response.json()).then(result => result.socketUrl);
 
-    let response = await fetch('api/jobs');
+    let response = await fetch('api/jobs/user');
     if (!response.ok) {
       console.log('Failed to fetch job list.');
       return;

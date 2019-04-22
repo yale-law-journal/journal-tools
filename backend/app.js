@@ -34,20 +34,22 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: false }));
 
-try {
-  var SequelizeStore = require('connect-session-sequelize')(session.Store);
-  app.use(session({
-    secret: config.session_secret,
-    store: new SequelizeStore({ db: sql.get() }),
-    resave: false,
-    saveUninitialized: false,
-  }));
-} catch (e) { console.log(e); }
+app.use((req, res, next) => sql.ready().then(next()));
+
+var SequelizeStore = require('connect-session-sequelize')(session.Store);
+app.use(session({
+  secret: config.session_secret,
+  store: new SequelizeStore({ db: sql.get() }),
+  resave: false,
+  saveUninitialized: false,
+}));
 app.use(passport.initialize());
 app.use(passport.session());
 
-var awsServerlessExpressMiddleware = require('aws-serverless-express/middleware');
-app.use(awsServerlessExpressMiddleware.eventContext());
+if (process.env.LAMBDA_TASK_ROOT) {
+  var awsServerlessExpressMiddleware = require('aws-serverless-express/middleware');
+  app.use(awsServerlessExpressMiddleware.eventContext());
+}
 
 app.use(function(req, res, next) {
   if (req.path.startsWith('/api/auth')
@@ -73,6 +75,8 @@ app.use(function(req, res, next) {
 
 // error handler
 app.use(function(err, req, res, next) {
+  console.error(err);
+
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
