@@ -21,7 +21,7 @@ class LoginForm extends Component {
     let loginInfo = 'Signed out', options = null, orgMenu = null;
     if (this.props.loginInfo) {
       let currentOrg = this.props.loginInfo.organizations.find(org => org.id == this.props.organization);
-      let isAdmin = currentOrg.admin;
+      let isAdmin = this.props.loginInfo.siteAdmin || currentOrg.admin;
       loginInfo = this.props.loginInfo.name;
       options = this.props.loginInfo.organizations.map(org =>
         <option value={org.id}>{ org.name }</option>
@@ -33,17 +33,17 @@ class LoginForm extends Component {
             { options }
           </Form.Control>
           <InputGroup.Append>
-            { isAdmin ? <Button variant="secondary" href="admin.html">Admin</Button> : null }
+            { isAdmin ? <Button variant="secondary" href="admin">Admin</Button> : null }
           </InputGroup.Append>
         </InputGroup>
       </>;
     }
     return <>
-      <Navbar.Text className="mr-sm-3">{ loginInfo }</Navbar.Text>
-      <Form inline>
+      <Navbar.Text>{ loginInfo }</Navbar.Text>
+      <Form inline className="ml-sm-3">
         { orgMenu }
       </Form>
-      <Button size="sm" variant="light" className="ml-sm-3" onClick={this.handleLogout}>Logout</Button>
+      { this.props.loginInfo ? <Button size="sm" variant="light" className="ml-sm-3" onClick={this.handleLogout}>Logout</Button> : null }
     </>;
   }
 }

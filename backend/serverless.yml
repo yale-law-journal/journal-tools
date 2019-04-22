@@ -160,7 +160,7 @@ resources:
     AdminProxyMethod:
       Type: AWS::ApiGateway::Method
       Properties:
-        ResourceId: !GetAtt ApiGatewayRestApi.RootResourceId
+        ResourceId: !Ref AdminResource
         RestApiId: !Ref ApiGatewayRestApi
         HttpMethod: GET
         AuthorizationType: NONE

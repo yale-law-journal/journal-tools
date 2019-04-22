@@ -8,7 +8,7 @@ const config = {
     admin: [ './admin.jsx' ],
   },
   output: {
-    path: path.resolve(__dirname, 'public', 'javascripts'),
+    path: path.resolve(__dirname, 'dist'),
     filename: '[name].bundle.js',
     sourceMapFilename: '[name].js.map'
   },
