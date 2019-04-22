@@ -19,6 +19,7 @@ router.get('/', async function(req, res, next) {
       organizations: orgs.map(org => ({
         id: org.id,
         name: org.name,
+        admin: org.OrganizationUser.admin,
       })),
     });
   } else {
