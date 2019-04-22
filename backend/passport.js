@@ -36,7 +36,7 @@ try {
 
   passport.serializeUser((user, done) => done(null, user.email));
   passport.deserializeUser((email, done) =>
-    User.findByPk(email).then(result => done(null, result), err => done(err, null))
+    User.findByPk(email).then(result => done(null, result || false), err => done(err, null))
   );
 } catch (e) { console.log(e); }
 

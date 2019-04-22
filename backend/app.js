@@ -39,6 +39,7 @@ app.use((req, res, next) => sql.ready().then(next()));
 var SequelizeStore = require('connect-session-sequelize')(session.Store);
 app.use(session({
   secret: config.session_secret,
+  secure: Boolean(process.env.LAMBDA_TASK_ROOT),
   store: new SequelizeStore({ db: sql.get() }),
   resave: false,
   saveUninitialized: false,

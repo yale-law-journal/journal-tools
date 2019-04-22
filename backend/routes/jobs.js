@@ -108,9 +108,9 @@ router.post('/:command', function(req, res, next) {
   }
 
   let queueUrlPromise = null;
-  if (process.env.LAMBDA_TASK_ROOT) {
-    let arn = process.env.PROGRESS_QUEUE_ARN;
-    let components = arn.split(':');
+  let queueArn = process.env.PROGRESS_QUEUE_ARN;
+  if (queueArn) {
+    let components = queueArn.split(':');
     let name = components[components.length - 1];
     let userId = components[components.length - 2];
     queueUrlPromise = sqs.getQueueUrl({
@@ -133,28 +133,29 @@ router.post('/:command', function(req, res, next) {
     OrganizationId: req.fields.organization,
   });
 
-  if (!process.env.LAMBDA_TASK_ROOT) { return res.json({ job: job }); }
-
   try {
     let queueData = await queueUrlPromise;
-    let queueUrl = queueData.QueueUrl;
-    await s3.putObject({
-      Body: fs.createReadStream(file.path),
-      Bucket: process.env.UPLOADS_BUCKET,
-      Key: `${command}/${fileUuid}`,
-      ContentEncoding: file.encoding,
-      ContentType: file.mimetype,
-      ACL: 'private',
-      Metadata: {
-        'original-name': originalName,
-        'job-id': `${job.id}`,
-        'uuid': fileUuid,
-        'queue-url': queueUrl,
-        'pullers': encodeURI(req.fields.pullers),
-        'perma-api': org.permaApiKey || undefined,
-        'perma-folder': org.permaFolder || undefined,
-      },
-    }).promise();
+    let queueUrl = queueData ? queueData.QueueUrl : undefined;
+    let bucket = process.env.UPLOADS_BUCKET;
+    if (bucket) {
+      await s3.putObject({
+        Body: fs.createReadStream(file.path),
+        Bucket: bucket,
+        Key: `${command}/${fileUuid}`,
+        ContentEncoding: file.encoding,
+        ContentType: file.mimetype,
+        ACL: 'private',
+        Metadata: {
+          'original-name': originalName,
+          'job-id': `${job.id}`,
+          'uuid': fileUuid,
+          'queue-url': queueUrl,
+          'pullers': encodeURI(req.fields.pullers),
+          'perma-api': org.permaApiKey || undefined,
+          'perma-folder': org.permaFolder || undefined,
+        },
+      }).promise();
+    }
 
     console.log('Upload finished.');
     res.json({ job: job });
