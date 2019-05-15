@@ -70,8 +70,9 @@ router.post('/', jsonParser, async function(req, res, next) {
       return next(createError(400));
     }
 
-    await Promise.all(req.body.users.map(u => User.findOrCreate({ where: { email: u.email } })));
-    await org.setUsers(req.body.users.map(u => u.email));
+    let userEmails = req.body.users.map(u => u.email.trim());
+    await Promise.all(userEmails.map(e => User.findOrCreate({ where: { email: e } })));
+    await org.setUsers(userEmails);
   }
   if (req.body.admins) {
     if (!req.body.admins.every(u => isString(u.email))) {
@@ -79,8 +80,9 @@ router.post('/', jsonParser, async function(req, res, next) {
       return next(createError(400));
     }
 
-    await Promise.all(req.body.admins.map(u => User.findOrCreate({ where: { email: u.email } })));
-    await org.addUsers(req.body.admins.map(u => u.email), { through: { admin: true } });
+    let adminEmails = req.body.admins.map(u => u.email.trim());
+    await Promise.all(adminEmails.map(e => User.findOrCreate({ where: { email: e } })));
+    await org.setAdmins(adminEmails);
   }
 
   let users = await org.getUsers();
