@@ -28,7 +28,7 @@ provider:
     - Effect: Allow
       Action:
         - es:*
-      Resource: ${file(config.json):production.elasticsearch.arn}
+      Resource: ${file(secrets.yml):default.elasticsearch.arn}
     - Effect: Allow
       Action:
         - s3:HeadBucket

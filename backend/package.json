@@ -15,7 +15,7 @@
     "/routes",
     "/views",
     "/data/abbreviations.json",
-    "/config.json"
+    "/secrets.yml"
   ],
   "dependencies": {
     "aws-serverless-express": "^3.3.6",
