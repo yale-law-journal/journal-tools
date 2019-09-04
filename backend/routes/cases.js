@@ -15,7 +15,7 @@ router.get('/:reporter/:volume/:startPage', function(req, res, next) {
   let volume = sanitize(req.params['volume']);
   let startPage = sanitize(req.params['startPage']);
 
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.AWS_TASK_ROOT) {
     let sourcePdf = path.resolve(dataDir, reporter, volume, startPage + '.pdf');
     if (!fs.existsSync(sourcePdf)) {
       res.status(404).send('No volume of that reporter.');

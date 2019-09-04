@@ -13,7 +13,7 @@ provider:
 
   environment:
     STAGE: ${self:custom.stage}
-    NODE_ENV: development
+    NODE_ENV: ${self:custom.nodeEnv.${self:custom.stage}}
     ROOT_URL: !Join
       - ""
       - - https://
@@ -224,6 +224,9 @@ plugins:
 custom:
   stage: ${opt:stage, self:provider.stage}
   region: ${opt:region, self:provider.region}
+  nodeEnv:
+    dev: development
+    prod: production
   apigwBinary:
     types:
       - application/zip
