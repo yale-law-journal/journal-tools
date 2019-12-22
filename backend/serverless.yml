@@ -14,12 +14,7 @@ provider:
   environment:
     STAGE: ${self:custom.stage}
     NODE_ENV: ${self:custom.nodeEnv.${self:custom.stage}}
-    ROOT_URL: !Join
-      - ""
-      - - https://
-        - !Ref ApiGatewayRestApi
-        - .execute-api.${self:custom.region}.amazonaws.com
-        - /${self:custom.stage}
+    ROOT_URL: ${self:custom.rootUrl}
     PROGRESS_QUEUE_ARN: !ImportValue ProgressQueueArn-${self:custom.stage}
     SOCKET_URL: !ImportValue SocketUrl-${self:custom.stage}
     UPLOADS_BUCKET: !ImportValue S3Uploads-${self:custom.stage}
@@ -224,6 +219,13 @@ plugins:
 custom:
   stage: ${opt:stage, self:provider.stage}
   region: ${opt:region, self:provider.region}
+  defaultRootUrl: !Join
+      - ""
+      - - https://
+        - !Ref ApiGatewayRestApi
+        - .execute-api.${self:custom.region}.amazonaws.com
+        - /${self:custom.stage}
+  rootUrl: ${file(secrets.yml):${self:custom.stage}.root_url, self:custom.defaultRootUrl}
   nodeEnv:
     dev: development
     prod: production
