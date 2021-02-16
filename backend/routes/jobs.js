@@ -87,7 +87,7 @@ router.post('/:command', (req, res, next) => {
   const command = req.params['command'];
   const file = req.files.doc;
 
-  if (!['pull', 'perma'].includes(command) || !file || !req.fields.organization) {
+  if (!['pull', 'perma', 'bluebook'].includes(command) || !file || !req.fields.organization) {
     res.sendStatus(400);
     return;
   }

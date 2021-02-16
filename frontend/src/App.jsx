@@ -166,6 +166,7 @@ class App extends Component {
           <FileInputCard title="Bookpull Spreadsheet" action="api/jobs/pull" createJob={this.createJob}>
             <Form.Control name="pullers" as="textarea" placeholder="Pullers (one per line)" className="h-100 w-100" style={{ resize: 'none' }} />
           </FileInputCard>
+          <FileInputCard title="Bluebook Errors" action="api/jobs/bluebook" createJob={this.createJob} />
         </Row>
         <Row>
           { jobCards }
