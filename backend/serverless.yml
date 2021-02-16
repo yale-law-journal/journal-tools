@@ -147,6 +147,37 @@ resources:
               ResponseParameters:
                 method.response.header.Content-Type: integration.response.header.Content-Type
           PassthroughBehavior: WHEN_NO_MATCH
+    BluebookResource:
+      Type: AWS::ApiGateway::Resource
+      Properties:
+        ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+        PathPart: "bluebook"
+        RestApiId: !Ref ApiGatewayRestApi
+    BluebookProxyMethod:
+      Type: AWS::ApiGateway::Method
+      Properties:
+        ResourceId: !Ref BluebookResource
+        RestApiId: !Ref ApiGatewayRestApi
+        HttpMethod: GET
+        AuthorizationType: NONE
+        MethodResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Content-Type: true
+        Integration:
+          Type: AWS
+          Credentials: !GetAtt S3ReadRole.Arn
+          Uri: !Join
+            - ""
+            - - arn:aws:apigateway:${self:custom.region}:s3:path/
+              - !Ref S3BucketJournaltoolsstatic
+              - /index.html
+          IntegrationHttpMethod: GET
+          IntegrationResponses:
+            - StatusCode: 200
+              ResponseParameters:
+                method.response.header.Content-Type: integration.response.header.Content-Type
+          PassthroughBehavior: WHEN_NO_MATCH
     AdminResource:
       Type: AWS::ApiGateway::Resource
       Properties:

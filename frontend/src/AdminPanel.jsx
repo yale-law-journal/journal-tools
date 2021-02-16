@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 
 import restProvider from 'ra-data-simple-rest';
 import { Admin, Resource, List, Datagrid, DateField, TextField, UrlField, ReferenceField, BooleanField, ArrayField, SingleFieldList,
-  Edit, Create, SimpleForm, DisabledInput, TextInput, ArrayInput, SimpleFormIterator } from 'react-admin';
+  Edit, Create, SimpleForm, TextInput, ArrayInput, SimpleFormIterator } from 'react-admin';
 
 const OrganizationList = (props) => (
   <List {...props}>
@@ -47,7 +47,7 @@ const OrganizationCreate = (props) => (
 const OrganizationEdit = (props) => (
   <Edit {...props}>
     <SimpleForm>
-      <DisabledInput source="id" />
+      <TextInput source="id" readonly />
       <TextInput source="name" />
       <TextInput source="permaApiKey" />
       <TextInput source="permaFolder" />

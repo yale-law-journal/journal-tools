@@ -17,9 +17,13 @@ class JobCard extends Component {
     let completed = this.props.job.completed || (this.props.progress && this.props.progress.progress == this.props.progress.total);
     let progress;
     if (completed) {
-      progress = (
+      progress = this.props.job.command !== 'bluebook' ? (
         <Button variant="success" href={this.props.job.resultUrl} download>
-          {this.props.job.command === 'bluebook' ? 'View' : 'Download'}
+          Download
+        </Button>
+      ) : (
+        <Button variant="success" href={`/bluebook?url=${encodeURI(this.props.job.resultUrl)}`} target="_blank">
+          View
         </Button>
       );
     } else if (this.props.progress) {

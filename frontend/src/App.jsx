@@ -146,11 +146,11 @@ class App extends Component {
     let jobCards = orgJobs.slice().sort(compare).map(job =>
       <JobCard job={job} progress={this.state.progress[job.id]} key={job.id} />
     );
-    let loginInfo = this.state.loginInfo ? `Signed in as ${this.state.loginInfo.name}` : 'Signed out';
+    let brand = window.location.hostname.startsWith('dev.') ? '(DEV) Journal Tools' : 'Journal Tools';
     return <>
       <LoginModal show={!this.state.loading && !Boolean(this.state.loginInfo)} />
       <Navbar bg="dark" variant="dark" expand="sm">
-        <Navbar.Brand>Journal Tools</Navbar.Brand>
+        <Navbar.Brand>{brand}</Navbar.Brand>
         <Navbar.Toggle />
         <Navbar.Collapse className="justify-content-end">
           <LoginForm
