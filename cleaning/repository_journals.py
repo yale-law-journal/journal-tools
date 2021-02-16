@@ -7,7 +7,7 @@ import scrapy
 ISSUE_RE = re.compile(r'vol(?P<volume>[0-9]+)/iss(?P<issue>[0-9]+)/?$')
 VOLUME_RE = re.compile(r'vol(?P<volume>[0-9]+)$')
 
-connections.create_connection(hosts=['localhost'])
+connections.create_connection(hosts=['search-ylj-pdfapi-es-dev-zwg7cvq2vxg5qsfvwwgxx2wbzy.us-east-1.es.amazonaws.com:80'])
 
 def normalize_title(title):
     unsub = re.sub(':.*$', '', title)
@@ -39,17 +39,19 @@ class Article(Document):
 
         super().save(*args, **kwargs)
 
+print('Initializing article...')
 Article.init()
+print('Done.')
 
 class JournalSpider(scrapy.Spider):
     name = 'JournalSpider'
     def start_requests(self):
         return [
-            # scrapy.Request('https://lawreviewcommons.com/peer_review_list.html', self.journal_list)
-            scrapy.Request('https://repository.law.umich.edu/mlr/', self.journal, meta={
-                'journal_name': 'Michigan Law Review',
-                'journal_link': 'https://repository.law.umich.edu/mlr/',
-            })
+            scrapy.Request('https://lawreviewcommons.com/peer_review_list.html', self.journal_list)
+            # scrapy.Request('https://repository.law.umich.edu/mlr/', self.journal, meta={
+            #     'journal_name': 'Michigan Law Review',
+            #     'journal_link': 'https://repository.law.umich.edu/mlr/',
+            # })
         ]
 
     def journal_list(self, response):
@@ -61,6 +63,7 @@ class JournalSpider(scrapy.Spider):
             })
 
     def journal(self, response):
+        print('Journal:', response.url)
         for option in response.xpath('//form[@id="browse"]//option'):
             link = option.attrib['value']
             issue_match = ISSUE_RE.search(link)

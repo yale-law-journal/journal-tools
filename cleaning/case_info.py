@@ -3,7 +3,7 @@ from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 import gzip
 import json
-import pymongo
+# import pymongo
 import subprocess
 import tarfile
 
@@ -19,11 +19,11 @@ parser.add_argument('--database', type=str, action='store', default='database')
 parser.add_argument('--filter', type=str, action='store')
 args = parser.parse_args()
 
-client = pymongo.MongoClient()
-db = client[args.database]
-collection = db.clusters
-collection.drop()
-assert collection.estimated_document_count() == 0
+# client = pymongo.MongoClient()
+# db = client[args.database]
+# collection = db.clusters
+# collection.drop()
+# assert collection.estimated_document_count() == 0
 
 es_client = Elasticsearch()
 # es_client = Elasticsearch('https://search-ylj-pdfapi-elasticsearch-dev-xycwvspdojzkh2qigsa5x67l6i.us-east-2.es.amazonaws.com')
@@ -97,9 +97,9 @@ with tarfile.open(all_tar_path, 'r') as all_tar:
         with all_tar.extractfile(tarinfo) as tar_gz_file:
             tar_gz_insert_all(tar_gz_file)
 
-print('Creating index...')
-collection.create_index([
-    ('citations.reporter', pymongo.ASCENDING),
-    ('citations.volume', pymongo.ASCENDING),
-    ('citations.page', pymongo.ASCENDING),
-])
+# print('Creating index...')
+# collection.create_index([
+#     ('citations.reporter', pymongo.ASCENDING),
+#     ('citations.volume', pymongo.ASCENDING),
+#     ('citations.page', pymongo.ASCENDING),
+# ])

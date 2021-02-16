@@ -7,7 +7,7 @@ import subprocess
 SENSITIVITY = 30
 
 top_dir = join(dirname(__file__), '..')
-data_dir = join(top_dir, 'data', 'us', 'orig')
+data_dir = join(top_dir, 'data', 'orig')
 
 DIGIT_RE = re.compile(r'[0-9]+')
 def get_numbers(text):
@@ -18,7 +18,7 @@ for f in sorted(os.listdir(data_dir)):
     if not isfile(path) or not f.endswith('bv.pdf'): continue
 
     print(f)
-    out_path = join(top_dir, 'data', 'us', f.replace('bv.pdf', '.pdf'))
+    out_path = join(top_dir, 'data', 'full', f.replace('bv.pdf', '.pdf'))
     if isfile(out_path):
         print('  skipping.')
         continue
@@ -35,4 +35,4 @@ for f in sorted(os.listdir(data_dir)):
 
     if works:
         print('  Detected starting page: {}'.format(page_idx))
-        subprocess.check_call(['cpdf', '-o', out_path, path, '{}-end'.format(page_idx + 1)])
+        subprocess.check_call(['/Users/phulin/bin/cpdf', '-o', out_path, path, '{}-end'.format(page_idx + 1)])

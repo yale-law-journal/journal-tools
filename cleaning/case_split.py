@@ -77,7 +77,7 @@ async def split_volume(es_client, session, reporter, volume_file, volume_path, o
         pages = '{}-{}'.format(start_page, end_page)
         out_path = join(out_dir, '{}.pdf'.format(start_page))
         if not isfile(out_path):
-            coroutines.append(try_call(['cpdf', volume_path, pages, '-o', out_path]))
+            coroutines.append(try_call(['/Users/phulin/bin/cpdf', volume_path, pages, '-o', out_path]))
 
     await asyncio.gather(*coroutines)
     print('Finished', out_dir)
@@ -88,9 +88,11 @@ async def go():
 
         coroutines = []
         data = join(dirname(__file__), '..', 'data')
+        print(os.listdir(data))
         for reporter in os.listdir(data):
             reporter_path = join(data, reporter, 'full')
-            if reporter.startswith('.') or not isdir(reporter_path): continue
+            if reporter.startswith('.') or not isdir(reporter_path) or reporter != 'us': continue
+            print(reporter)
 
             for volume in os.listdir(reporter_path):
                 volume_path = join(reporter_path, volume)
