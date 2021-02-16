@@ -1,13 +1,11 @@
-var fs = require('fs');
-var passport = require('passport');
-var GoogleStrategy = require('passport-google-oauth20').Strategy;
-var path = require('path');
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
 
-var db = require('./sql');
-var models = require('./models');
-var User = models.User;
+const db = require('./sql');
+const models = require('./models');
+const User = models.User;
 
-var config = require('./config');
+const config = require('./config');
 
 try {
   passport.use(
@@ -16,7 +14,7 @@ try {
       clientSecret: config.google.client_secret,
       callbackURL: `${process.env.ROOT_URL}/api/auth/google/callback`,
     },
-    function(accessToken, refreshToken, profile, done) {
+    ((accessToken, refreshToken, profile, done) => {
       console.log('Profile:', profile);
       db.ready().then(() => {
         return User.findByPk(profile.emails[0].value);
@@ -31,13 +29,14 @@ try {
           return done(null, false, { message: 'User authorization not found. (have you sent in your Google account?).' });
         }
       }, err => { console.log(err); return done(err, null) });
-    }
+    })
   ));
 
   passport.serializeUser((user, done) => done(null, user.email));
-  passport.deserializeUser((email, done) =>
-    User.findByPk(email).then(result => done(null, result || false), err => done(err, null))
-  );
+  passport.deserializeUser((email, done) => {
+    console.log('email:', email);
+    User.findByPk(email).then(result => done(null, result || false), err => done(err, null));
+  });
 } catch (e) { console.log(e); }
 
 module.exports = passport;

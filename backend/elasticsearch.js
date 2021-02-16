@@ -1,7 +1,7 @@
-var { Client } = require('elasticsearch');
-var httpAwsEs = require('http-aws-es');
+const { Client } = require('elasticsearch');
+const httpAwsEs = require('http-aws-es');
 
-var state = {
+const state = {
   db: null
 }
 

@@ -7,6 +7,7 @@ service: journal-tools-backend
 provider:
   name: aws
   runtime: nodejs12.x
+  endpointType: REGIONAL
 
   apiGateway:
     minimumCompressionSize: 65536
@@ -120,7 +121,7 @@ resources:
     S3BucketJournaltoolsstatic:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: journal-tools-static-${self:custom.stage}
+        BucketName: journal-tools-2-static-${self:custom.stage}
     IndexProxyMethod:
       Type: AWS::ApiGateway::Method
       Properties:

@@ -1,25 +1,22 @@
-var AWS = require('aws-sdk');
-var formidable = require('formidable');
-var fs = require('fs');
-var createError = require('http-errors');
-var Sequelize = require('sequelize');
-var uuid = require('uuid/v4');
+const AWS = require('aws-sdk');
+const formidable = require('formidable');
+const fs = require('fs');
+const createError = require('http-errors');
+const Sequelize = require('sequelize');
+const uuid = require('uuid/v4');
 
-var router = require('express-promise-router')();
+const router = require('express-promise-router')();
 
-var config = require('../config');
-var db = require('../sql');
-var models = require('../models');
-var Job = models.Job;
-var Organization = models.Organization;
+const models = require('../models');
+const Job = models.Job;
+const Organization = models.Organization;
 
-let s3 = new AWS.S3();
-let sqs = new AWS.SQS();
-let lambda = new AWS.Lambda();
+const s3 = new AWS.S3();
+const sqs = new AWS.SQS();
 
 /* GET all jobs. */
-router.get('/user', async function(req, res) {
-  let jobs = await Job.findAll({
+router.get('/user', async (req, res) => {
+  const jobs = await Job.findAll({
     where: { UserEmail: req.user.email }
   });
   res.json({ results: jobs });
@@ -29,13 +26,13 @@ function requireSiteAdmin(req, res, next) {
   req.user.siteAdmin ? next() : next(createError(401));
 }
 
-router.get('/', requireSiteAdmin, async function(req, res, next) {
+router.get('/', requireSiteAdmin, async (req, res, next) => {
   let jobs;
   if (req.user.siteAdmin) {
     jobs = await Job.findAll();
   } else {
-    let orgs = await req.user.getOrganizations();
-    let adminOrgIds = orgs.filter(org => org.OrganizationUser.admin).map(org => org.id);
+    const orgs = await req.user.getOrganizations();
+    const adminOrgIds = orgs.filter(org => org.OrganizationUser.admin).map(org => org.id);
     jobs = await Job.findAll({ where: {
       [Sequelize.or]: [
         { OrganizationId: adminOrgIds },
@@ -49,18 +46,18 @@ router.get('/', requireSiteAdmin, async function(req, res, next) {
 });
 
 async function requireAccessJob(req, res, next) {
-  let id = parseInt(req.params.id);
+  const id = parseInt(req.params.id);
 
-  let [job, orgs] = await Promise.all([
-    Job.findByPk(parseInt(req.params.id)),
+  const [job, orgs] = await Promise.all([
+    Job.findByPk(id),
     req.user.getOrganizations(),
   ]);
   if (!job) {
     next(createError(404));
   }
 
-  let adminOrgIds = orgs.filter(org => org.OrganizationUser.admin).map(org => org.id);
-  if (req.user.siteAdmin || job.UserEmail == req.user.email || adminOrgIds.include(job.OrganizationId)) {
+  const adminOrgIds = orgs.filter(org => org.OrganizationUser.admin).map(org => org.id);
+  if (req.user.siteAdmin || job.UserEmail === req.user.email || adminOrgIds.include(job.OrganizationId)) {
     req.job = job;
     next();
   } else {
@@ -68,17 +65,17 @@ async function requireAccessJob(req, res, next) {
   }
 }
 
-router.get('/:id(\\d+)', requireAccessJob, async function(req, res, next) {
+router.get('/:id(\\d+)', requireAccessJob, async (req, res, next) => {
   res.json(req.job);
 });
 
-router.delete('/:id(\\d+)', requireAccessJob, async function(req, res, next) {
+router.delete('/:id(\\d+)', requireAccessJob, async (req, res, next) => {
   await req.job.destroy();
   res.json({ success: true });
 });
 
-router.post('/:command', function(req, res, next) {
-  let form = new formidable.IncomingForm();
+router.post('/:command', (req, res, next) => {
+  const form = new formidable.IncomingForm();
   form.uploadDir = '/tmp';
   form.parse(req, (err, fields, files) => {
     if (err) { console.log(err); next(err); }
@@ -86,9 +83,9 @@ router.post('/:command', function(req, res, next) {
     req.files = files;
     next();
   });
-}, async function(req, res) {
-  let command = req.params['command'];
-  let file = req.files.doc;
+}, async (req, res) => {
+  const command = req.params['command'];
+  const file = req.files.doc;
 
   if (!['pull', 'perma'].includes(command) || !file || !req.fields.organization) {
     res.sendStatus(400);
@@ -108,20 +105,20 @@ router.post('/:command', function(req, res, next) {
   }
 
   let queueUrlPromise = null;
-  let queueArn = process.env.PROGRESS_QUEUE_ARN;
+  const queueArn = process.env.PROGRESS_QUEUE_ARN;
   if (queueArn) {
-    let components = queueArn.split(':');
-    let name = components[components.length - 1];
-    let userId = components[components.length - 2];
+    const components = queueArn.split(':');
+    const name = components[components.length - 1];
+    const userId = components[components.length - 2];
     queueUrlPromise = sqs.getQueueUrl({
       QueueName: name,
       QueueOwnerAWSAccountId: userId,
     }).promise();
   }
 
-  let originalName = file.name.replace(/\.docx$/, '');
-  let fileUuid = uuid();
-  let job = await Job.create({
+  const originalName = file.name.replace(/\.docx$/, '');
+  const fileUuid = uuid();
+  const job = await Job.create({
     command: command,
     fileName: originalName,
     progress: 0,
@@ -134,9 +131,9 @@ router.post('/:command', function(req, res, next) {
   });
 
   try {
-    let queueData = await queueUrlPromise;
-    let queueUrl = queueData ? queueData.QueueUrl : undefined;
-    let bucket = process.env.UPLOADS_BUCKET;
+    const queueData = await queueUrlPromise;
+    const queueUrl = queueData ? queueData.QueueUrl : undefined;
+    const bucket = process.env.UPLOADS_BUCKET;
     if (bucket) {
       await s3.putObject({
         Body: fs.createReadStream(file.path),

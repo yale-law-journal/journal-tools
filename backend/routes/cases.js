@@ -1,22 +1,21 @@
-var express = require('express');
-var router = express.Router();
+const express = require('express');
+const router = express.Router();
 
-var fs = require('fs');
-var path = require('path');
-var sanitize = require('sanitize-filename');
+const fs = require('fs');
+const path = require('path');
+const sanitize = require('sanitize-filename');
 
-var config = require('../config');
-var db = require('../elasticsearch');
+const config = require('../config');
 
 /* GET pages from a reporter. */
-router.get('/:reporter/:volume/:startPage', function(req, res, next) {
-  let dataDir = path.resolve(__dirname, '..', 'data');
-  let reporter = sanitize(req.params['reporter'].replace(/[\. ]/, '').toLowerCase());
-  let volume = sanitize(req.params['volume']);
-  let startPage = sanitize(req.params['startPage']);
+router.get('/:reporter/:volume/:startPage', (req, res, next) => {
+  const dataDir = path.resolve(__dirname, '..', 'data');
+  const reporter = sanitize(req.params['reporter'].replace(/[. ]/, '').toLowerCase());
+  const volume = sanitize(req.params['volume']);
+  const startPage = sanitize(req.params['startPage']);
 
   if (process.env.AWS_TASK_ROOT) {
-    let sourcePdf = path.resolve(dataDir, reporter, volume, startPage + '.pdf');
+    const sourcePdf = path.resolve(dataDir, reporter, volume, `${startPage  }.pdf`);
     if (!fs.existsSync(sourcePdf)) {
       res.status(404).send('No volume of that reporter.');
       return;

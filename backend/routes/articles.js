@@ -1,24 +1,23 @@
-var express = require('express');
-var router = express.Router();
+const express = require('express');
+const router = express.Router();
 
-var fs = require('fs');
-var path = require('path');
-var request = require('request-promise-native');
+const fs = require('fs');
+const path = require('path');
+const request = require('request-promise-native');
 
-var config = require('../config');
-var db = require('../elasticsearch');
+const config = require('../config');
+const db = require('../elasticsearch');
 
-var abbreviationsText = fs.readFileSync(path.resolve(__dirname, '..', 'data', 'abbreviations.json'));
-var abbreviations = JSON.parse(abbreviationsText);
+const abbreviationsText = fs.readFileSync(path.resolve(__dirname, '..', 'data', 'abbreviations.json'));
+const abbreviations = JSON.parse(abbreviationsText);
 
 function expandJournal(journal) {
   let expanded = journal.replace(/\.(?=[A-Z])/g, '. ');
-  let ngrams = [];
   let words = expanded.split(' ');
   for (let len = 5; len >= 1; len--) {
     for (let i = 0; i < words.length - len + 1; i++) {
-      let ngram = words.slice(i, i + len).join(' ');
-      let full = abbreviations[len][ngram];
+      const ngram = words.slice(i, i + len).join(' ');
+      const full = abbreviations[len][ngram];
       if (full !== undefined) {
         expanded = expanded.replace(ngram, full);
         words = expanded.split(' ');
@@ -29,7 +28,7 @@ function expandJournal(journal) {
 }
 
 async function checkES(journal, volume, title) {
-  let esQuery = {
+  const esQuery = {
     index: 'articles',
     body: {
       query: {
@@ -68,7 +67,7 @@ async function checkES(journal, volume, title) {
   if (result.hits.hits.length === 0 || result.hits.max_score < 15) {
     return null;
   } else {
-    let topResult = result.hits.hits[0]._source;
+    const topResult = result.hits.hits[0]._source;
     return topResult.download_link ? topResult.download_link : null;
   }
 }
@@ -77,7 +76,7 @@ async function checkCrossref(journal, volume, title) {
   // Check Crossref and Unpaywall to try and find a link.
   // TODO: Move all this data into our own ES?
 
-  let crossref = await request({
+  const crossref = await request({
     uri: 'https://api.crossref.org/works',
     qs: {
       'query.container-title': journal,
@@ -93,17 +92,17 @@ async function checkCrossref(journal, volume, title) {
   }
 
   let items = crossref.message.items.filter(i => parseInt(i.volume) === volume);
-  let journalFiltered = items.filter(i => i['container-title'] === journal);
+  const journalFiltered = items.filter(i => i['container-title'] === journal);
   if (journalFiltered.length > 0) {
     items = journalFiltered;
   }
-  if (items.length == 0) {
+  if (items.length === 0) {
     console.log('Doesn\'t seem to match.');
     return null;
   }
   console.log(items[0]);
 
-  let doi = items[0]['DOI'];
+  const doi = items[0]['DOI'];
   let unpaywall = null;
   try {
     unpaywall = await request({
@@ -116,7 +115,7 @@ async function checkCrossref(journal, volume, title) {
     return null;
   }
 
-  let location = unpaywall.best_oa_location;
+  const location = unpaywall.best_oa_location;
   if (!location
       || !location.url_for_pdf
       || location.version !== 'submittedVersion') {
@@ -133,12 +132,12 @@ async function findLink(journal, volume, title) {
 }
 
 /* GET a journal article. */
-router.get('/:journal/:volume/:title', async function(req, res) {
-  let journal = expandJournal(req.params['journal']);
-  let volume = parseInt(req.params['volume']);
-  let title = req.params['title'];
+router.get('/:journal/:volume/:title', async (req, res) => {
+  const journal = expandJournal(req.params['journal']);
+  const volume = parseInt(req.params['volume']);
+  const title = req.params['title'];
 
-  let downloadLink = await findLink(journal, volume, title);
+  const downloadLink = await findLink(journal, volume, title);
   if (downloadLink !== null) {
     res.redirect(downloadLink);
   } else {

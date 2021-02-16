@@ -1,17 +1,13 @@
-var express = require('express');
-var router = express.Router();
+const express = require('express');
+const router = express.Router();
 
-var createError = require('http-errors');
+const createError = require('http-errors');
 
-var config = require('../config');
-var passport = require('../passport');
-var db = require('../sql');
-var models = require('../models');
-var Organization = models.Organization;
+const passport = require('../passport');
 
-router.get('/', async function(req, res, next) {
+router.get('/', async (req, res, next) => {
   if (req.isAuthenticated()) {
-    let orgs = await req.user.getOrganizations();
+    const orgs = await req.user.getOrganizations();
     res.json({
       name: req.user.name,
       email: req.user.email,
@@ -27,7 +23,7 @@ router.get('/', async function(req, res, next) {
   }
 });
 
-router.get('/logout', function(req, res, next) {
+router.get('/logout', (req, res, next) => {
   req.logout();
   res.json({ success: true, message: 'Logged out.' });
 });
