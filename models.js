@@ -32,7 +32,7 @@ function sync(sequelize) {
     googleId: Sequelize.STRING,
     siteAdmin: { type: Sequelize.BOOLEAN, defaultValue: false },
   }, { sequelize });
-  User.beforeCreate('lowercaseEmail', (user) => user.email = user.email.toLowerCase());
+  User.beforeCreate((user, options) => { user.email = user.email.toLowerCase(); });
 
   Organization.init({
     id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },

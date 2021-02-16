@@ -17,7 +17,7 @@ try {
     ((accessToken, refreshToken, profile, done) => {
       console.log('Profile:', profile);
       db.ready().then(() => {
-        return User.findByPk(profile.emails[0].value);
+        return User.findByPk(profile.emails[0].value.toLowerCase());
       }).then(user => {
         if (user) {
           user.update({

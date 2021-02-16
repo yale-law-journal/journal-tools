@@ -66,7 +66,7 @@ router.post('/', jsonParser, async (req, res, next) => {
       return next(createError(400));
     }
 
-    const userEmails = req.body.users.map(u => u.email.trim());
+    const userEmails = req.body.users.map(u => u.email.trim().toLowerCase());
     await Promise.all(userEmails.map(e => User.findOrCreate({ where: { email: e } })));
     await org.setUsers(userEmails);
   }
@@ -76,7 +76,7 @@ router.post('/', jsonParser, async (req, res, next) => {
       return next(createError(400));
     }
 
-    const adminEmails = req.body.admins.map(u => u.email.trim());
+    const adminEmails = req.body.admins.map(u => u.email.trim().toLowerCase());
     await Promise.all(adminEmails.map(e => User.findOrCreate({ where: { email: e } })));
     await org.setAdmins(adminEmails);
   }
@@ -115,10 +115,10 @@ router.put('/:organization(\\d+)', requireOrganizationAdmin, jsonParser, async (
     permaApiKey: req.body.permaApiKey,
     permaFolder: req.body.permaFolder,
   });
-  await Promise.all(req.body.users.map(u => User.findOrCreate({ where: { email: u.email } })));
-  await req.organization.setUsers(req.body.users.map(u => u.email), { through: { admin: false } });
-  await Promise.all(req.body.admins.map(u => User.findOrCreate({ where: { email: u.email } })));
-  await req.organization.addUsers(req.body.admins.map(u => u.email), { through: { admin: true } });
+  await Promise.all(req.body.users.map(u => User.findOrCreate({ where: { email: u.email.trim().toLowerCase() } })));
+  await req.organization.setUsers(req.body.users.map(u => u.email.trim().toLowerCase()), { through: { admin: false } });
+  await Promise.all(req.body.admins.map(u => User.findOrCreate({ where: { email: u.email.trim().toLowerCase() } })));
+  await req.organization.addUsers(req.body.admins.map(u => u.email.trim().toLowerCase()), { through: { admin: true } });
   res.json({ id: req.organization.id, data: req.organization, oldData });
 });
 
@@ -145,7 +145,7 @@ router.post('/:organization(\\d+)/users', jsonParser, requireOrganizationAdmin, 
     return next(createError(400));
   }
 
-  await Promise.all(req.body.users.map(email => User.findOrCreate({ where: { email } })));
+  await Promise.all(req.body.users.map(email => User.findOrCreate({ where: { email: email.trim().toLowerCase() } })));
   await req.organization.addUsers(req.body.users);
   res.json({ success: true });
 });
@@ -155,7 +155,7 @@ router.post('/:organization(\\d+)/admins', jsonParser, requireOrganizationAdmin,
     return next(createError(400));
   }
 
-  await Promise.all(req.body.users.map(email => User.findOrCreate({ where: { email } })));
+  await Promise.all(req.body.users.map(email => User.findOrCreate({ where: { email: email.trim().toLowerCase() } })));
   await req.organization.addUsers(req.body.users, { through: { admin: true } });
   res.json({ success: true });
 });
