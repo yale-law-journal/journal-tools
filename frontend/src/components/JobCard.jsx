@@ -3,13 +3,13 @@ import React, { Component } from 'react';
 import Button from 'react-bootstrap/Button';
 import Card from 'react-bootstrap/Card';
 import Col from 'react-bootstrap/Col';
-import Form from 'react-bootstrap/Form';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import Row from 'react-bootstrap/Row';
 
-var JOB_TYPES = {
+const JOB_TYPES = {
   'perma': 'Perma',
   'pull': 'Pull',
+  'bluebook': 'Bluebook',
 };
 
 class JobCard extends Component {
@@ -19,7 +19,7 @@ class JobCard extends Component {
     if (completed) {
       progress = (
         <Button variant="success" href={this.props.job.resultUrl} download>
-          Download
+          {this.props.job.command === 'bluebook' ? 'View' : 'Download'}
         </Button>
       );
     } else if (this.props.progress) {
