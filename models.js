@@ -1,4 +1,4 @@
-var Sequelize = require('sequelize');
+const Sequelize = require('sequelize');
 
 class Job extends Sequelize.Model {}
 class Connection extends Sequelize.Model {}
@@ -32,6 +32,7 @@ function sync(sequelize) {
     googleId: Sequelize.STRING,
     siteAdmin: { type: Sequelize.BOOLEAN, defaultValue: false },
   }, { sequelize });
+  User.beforeCreate('lowercaseEmail', (user) => user.email = user.email.toLowerCase());
 
   Organization.init({
     id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
