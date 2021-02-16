@@ -20,3 +20,7 @@ secrets.yml.old
 /backend/data/full
 /data
 /frontend/public/javascripts
+
+cpdf
+/cleaning/faculty_scholarship.py
+/cleaning/website_journals.py
