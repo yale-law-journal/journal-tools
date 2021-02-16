@@ -12,13 +12,11 @@ jspm_packages
 config.json
 secrets.yml
 secrets.yml.old
+*.bundle.js
 /venv
 /backend/data/abbreviations.tsv
 /backend/data/us
 /backend/data/orig
 /backend/data/full
-/data/abbreviations.tsv
-/data/us
-/data/orig
-/data/full
+/data
 /frontend/public/javascripts
