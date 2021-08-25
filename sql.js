@@ -1,8 +1,8 @@
-var Sequelize = require('sequelize');
+const Sequelize = require('sequelize');
 
-var models = require('./models');
+const models = require('./models');
 
-var state = {
+const state = {
   ready: null,
   db: null,
 }
@@ -29,4 +29,4 @@ exports.get = function() {
   return state.db;
 }
 
-exports.ready = async () => state.ready;
+exports.ready = () => state.ready;
