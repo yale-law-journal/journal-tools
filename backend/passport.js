@@ -35,7 +35,7 @@ try {
   passport.serializeUser((user, done) => done(null, user.email));
   passport.deserializeUser((email, done) => {
     console.log('email:', email);
-    User.findByPk(email).then(result => done(null, result || false), err => done(err, null));
+    db.ready().then(() => User.findByPk(email)).then(result => done(null, result || false), err => done(err, null));
   });
 } catch (e) { console.log(e); }
 

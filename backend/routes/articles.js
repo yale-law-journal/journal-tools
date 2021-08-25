@@ -76,16 +76,22 @@ async function checkCrossref(journal, volume, title) {
   // Check Crossref and Unpaywall to try and find a link.
   // TODO: Move all this data into our own ES?
 
-  const crossref = await request({
-    uri: 'https://api.crossref.org/works',
-    qs: {
-      'query.container-title': journal,
-      'query.title': title,
-      filter: 'type:journal-article',
-      select: 'score,DOI,container-title,volume,page,title,author',
-    },
-    json: true,
-  });
+  let crossref;
+  try {
+    crossref = await request({
+      uri: 'https://api.crossref.org/works',
+      qs: {
+        'query.container-title': journal,
+        'query.bibliographic': title,
+        filter: 'type:journal-article',
+        select: 'score,DOI,container-title,volume,page,title,author',
+      },
+      json: true,
+    });
+  } catch (e) {
+    console.log('Error in crossref request:', e);
+    return null;
+  }
   if (crossref.status !== 'ok') {
     console.log('Crossref request failed:', crossref.message);
     return null;

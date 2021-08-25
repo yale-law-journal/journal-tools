@@ -13,6 +13,7 @@ config.json
 secrets.yml
 secrets.yml.old
 *.bundle.js
+*.js.map
 /venv
 /backend/data/abbreviations.tsv
 /backend/data/us
