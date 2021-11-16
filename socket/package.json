@@ -9,7 +9,7 @@
   "author": "Patrick Hulin",
   "license": "MIT",
   "optionalDependencies": {
-    "aws-sdk": "^2.434.0"
+    "aws-sdk": "^2.814.0"
   },
   "dependencies": {
     "aws4": "^1.8.0",
