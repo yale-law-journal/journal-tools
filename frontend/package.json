@@ -15,7 +15,7 @@
     "@babel/preset-env": "^7.5.5",
     "@babel/preset-react": "^7.0.0",
     "babel-loader": "^8.0.6",
-    "moment": "^2.24.0",
+    "moment": "^2.29.4",
     "ra-data-simple-rest": "^3.10.4",
     "react": "^17.0.1",
     "react-admin": "^3.12.2",
