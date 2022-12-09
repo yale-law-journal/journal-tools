@@ -25,7 +25,7 @@
     "cookie-parser": "^1.4.5",
     "debug": "~2.6.9",
     "elasticsearch": "^15.5.0",
-    "express": "~4.16.0",
+    "express": "~4.17.3",
     "express-promise-router": "^3.0.3",
     "express-session": "^1.17.1",
     "formidable": "^1.2.2",
